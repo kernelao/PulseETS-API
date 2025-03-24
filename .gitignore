@@ -23,3 +23,21 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###
+
+
+# Mac OS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+
+# Logs globaux (parfois utiles à ignorer)
+*.log
+
+# SQLite (si jamais on testes avec)
+*.sqlite
