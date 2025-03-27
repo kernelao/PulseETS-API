@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -33,9 +35,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
+    private Collection $taches; // 👈 Liste des tâches liées à l’utilisateur
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->taches = new ArrayCollection(); // 👈 Initialisation de la collection
     }
 
     public function getId(): ?int
@@ -104,6 +110,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
-        // Si on stockes des infos sensibles temporaires, les effacer ici
+    }
+
+    public function getTaches(): Collection
+    {
+        return $this->taches;
+    }
+
+    public function addTache(Tache $tache): self
+    {
+        if (!$this->taches->contains($tache)) {
+            $this->taches[] = $tache;
+            $tache->setUser($this); // 👈 Associer l’utilisateur à la tâche
+        }
+
+        return $this;
+    }
+
+    public function removeTache(Tache $tache): self
+    {
+        if ($this->taches->removeElement($tache)) {
+            if ($tache->getUser() === $this) {
+                $tache->setUser(null); // 👈 Retirer la relation
+            }
+        }
+
+        return $this;
     }
 }
