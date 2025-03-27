@@ -14,11 +14,15 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use App\Entity\User;
 
+use App\Repository\UserRepository;
+
 class LoginAuthAuthenticator extends AbstractAuthenticator
 {
     public function __construct(
         private UrlGeneratorInterface $urlGenerator,
-        private JWTTokenManagerInterface $jwtManager
+        private JWTTokenManagerInterface $jwtManager,
+
+        private UserRepository $userRepository
     ) {}
 
     public function supports(Request $request): ?bool
@@ -27,14 +31,16 @@ class LoginAuthAuthenticator extends AbstractAuthenticator
     }
 
     public function authenticate(Request $request): Passport
-    {
-        $data = json_decode($request->getContent(), true);
+{
+    $data = json_decode($request->getContent(), true);
 
-        return new Passport(
-            new UserBadge($data['email']),
-            new PasswordCredentials($data['password'])
-        );
-    }
+    return new Passport(
+        new UserBadge($data['email'], function($userIdentifier) {
+            return $this->userRepository->findOneBy(['email' => $userIdentifier]);
+        }),
+        new PasswordCredentials($data['password'])
+    );
+}
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
