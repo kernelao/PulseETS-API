@@ -10,7 +10,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use Symfony\Component\Security\Core\Password\PasswordHasherInterface;
+use App\Entity\Avatar;
 use App\Entity\User;
 
 #[Route('/api')]
@@ -63,7 +64,7 @@ final class ProfileController extends AbstractController
 
     #[Route('/change-password', name: 'change_password', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function changePassword(Request $request, Security $security, UserPasswordEncoderInterface $passwordHasher, EntityManagerInterface $entityManager): Response
+    public function changePassword(Request $request, Security $security, PasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): Response
     {
     $user = $security->getUser();
 
@@ -88,7 +89,33 @@ final class ProfileController extends AbstractController
     $entityManager->flush();
 
     return new Response('Mot de passe modifié avec succès');
-}
+    }
+
+    #[Route('/update-avatar', name: 'update_avatar', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function updateAvatar(Request $request, Security $security, EntityManagerInterface $entityManager): Response
+    {
+    $user = $security->getUser();
+
+    if (!$user instanceof User) {
+        return new Response('Utilisateur non valide', 403);
+    }
+
+    // Récupère l'id de l'avatar sélectionné
+    $avatarId = $request->request->get('avatarId');
+    $avatar = $entityManager->getRepository(Avatar::class)->find($avatarId);
+
+    if (!$avatar) {
+        return new Response('Avatar non trouvé', 404);
+    }
+
+    // Met à jour l'avatar de l'utilisateur
+    $user->setAvatar($avatar);
+    $entityManager->persist($user);
+    $entityManager->flush();
+
+    return new Response('Avatar mis à jour avec succès');
+    }
 
 
 }

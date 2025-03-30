@@ -33,6 +33,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\ManyToOne(targetEntity: Avatar::class)]
+    #[ORM\JoinColumn(name: "avatar_id", referencedColumnName: "id")]
+    private $avatar;
+
+
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -106,4 +112,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // Si on stockes des infos sensibles temporaires, les effacer ici
     }
+
+    public function setAvatar(Avatar $avatar): self
+    {
+        $this->avatar = $avatar;
+        return $this;
+    }
+
 }
