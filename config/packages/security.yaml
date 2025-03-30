@@ -6,7 +6,7 @@ security:
         app_user_provider:
             entity:
                 class: App\Entity\User
-                property: username
+                property: email
 
     firewalls:
         dev:
@@ -18,17 +18,11 @@ security:
             stateless: true
             provider: app_user_provider
             custom_authenticator: App\Security\LoginAuthAuthenticator
-            jwt: ~
             logout:
                 path: /api/logout
 
     access_control:
-        # Accès public pour la connexion et l'inscription
         - { path: ^/api/connexion, roles: PUBLIC_ACCESS }
         - { path: ^/api/inscription, roles: PUBLIC_ACCESS }
-        
-        # Accès limité aux administrateurs pour toutes les routes /api/admin
         - { path: ^/api/admin, roles: ROLE_ADMIN }
-        
-        # Accès pour les utilisateurs ayant au moins ROLE_USER pour les autres routes API
         - { path: ^/api/, roles: ROLE_USER }
