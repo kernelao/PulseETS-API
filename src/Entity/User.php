@@ -34,10 +34,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private \DateTimeImmutable $createdAt;
 
     #[ORM\ManyToOne(targetEntity: Avatar::class)]
-    #[ORM\JoinColumn(name: "avatar_id", referencedColumnName: "id")]
-    private $avatar;
-
-
+    #[ORM\JoinColumn(name: "avatar_id", referencedColumnName: "id", nullable: true)]
+    private ?Avatar $avatar = null; 
 
     public function __construct()
     {
