@@ -8,9 +8,11 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use App\Entity\AchatAvatar;
+use App\Entity\Goal;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: '`user`')]
+#[ORM\Table(name: 'user')]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -35,13 +37,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\Column(type: 'integer')]
+    private int $pulsePoints = 0;
+
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
-    private Collection $taches; // 👈 Liste des tâches liées à l’utilisateur
+    private Collection $taches;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: AchatAvatar::class, orphanRemoval: true)]
+    private Collection $achatAvatar;
+
+    #[ORM\ManyToMany(targetEntity: Goal::class)]
+    private Collection $unlockedGoals;
+
+    #[ORM\ManyToOne(targetEntity: AchatAvatar::class)]
+    #[ORM\JoinColumn(name: "avatar_id", referencedColumnName: "id")]
+    private ?AchatAvatar $avatarPrincipal = null;
+
+    #[ORM\ManyToMany(targetEntity: Avatar::class, inversedBy: 'users')]
+    private Collection $avatars;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->taches = new ArrayCollection(); // 👈 Initialisation de la collection
+        $this->taches = new ArrayCollection();
+        $this->achatAvatar = new ArrayCollection();
+        $this->unlockedGoals = new ArrayCollection();
+        $this->avatars = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -121,7 +142,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->taches->contains($tache)) {
             $this->taches[] = $tache;
-            $tache->setUser($this); // 👈 Associer l’utilisateur à la tâche
+            $tache->setUser($this);
         }
 
         return $this;
@@ -131,10 +152,68 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->taches->removeElement($tache)) {
             if ($tache->getUser() === $this) {
-                $tache->setUser(null); // 👈 Retirer la relation
+                $tache->setUser(null);
             }
         }
 
+        return $this;
+    }
+
+    public function getPulsePoints(): int
+    {
+        return $this->pulsePoints;
+    }
+
+    public function setPulsePoints(int $points): self
+    {
+        $this->pulsePoints = $points;
+        return $this;
+    }
+
+    public function addPulsePoints(int $points): self
+    {
+        $this->pulsePoints += $points;
+        return $this;
+    }
+
+    public function getAchatsAvatars(): Collection
+    {
+        return $this->achatAvatar;
+    }
+
+    public function getGoals(): Collection
+    {
+        return $this->unlockedGoals;
+    }
+
+    public function getAvatarPrincipal(): ?AchatAvatar
+    {
+        return $this->avatarPrincipal;
+    }
+
+    public function setAvatarPrincipal(?AchatAvatar $avatarPrincipal): self
+    {
+        $this->avatarPrincipal = $avatarPrincipal;
+        return $this;
+    }
+
+    public function getAvatars(): Collection
+    {
+        return $this->avatars;
+    }
+
+    public function addAvatar(Avatar $avatar): self
+    {
+        if (!$this->avatars->contains($avatar)) {
+            $this->avatars->add($avatar);
+        }
+
+        return $this;
+    }
+
+    public function removeAvatar(Avatar $avatar): self
+    {
+        $this->avatars->removeElement($avatar);
         return $this;
     }
 }

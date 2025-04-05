@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des Avatars{% endblock %}
+
+{% block body %}
+    <h1>Choisir un Avatar</h1>
+    <div class="avatar-list">
+        {% for avatar in avatars %}
+            <div class="avatar-item">
+                <img src="{{ asset(avatar.imagePath) }}" alt="{{ avatar.name }}">
+                <h3>{{ avatar.name }}</h3>
+                
+                {% if avatar.unlocked %}
+                    <span>Débloqué</span>
+                {% else %}
+                    <form method="post" action="{{ path('avatar_unlock', {'id': avatar.id}) }}">
+                        <button type="submit">Débloquer</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
