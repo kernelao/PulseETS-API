@@ -10,6 +10,7 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use App\Entity\AchatAvatar;
 use App\Entity\Goal;
+use App\Entity\PulsePoint;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'user')]
@@ -37,9 +38,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
-    #[ORM\Column(type: 'integer')]
-    private int $pulsePoints = 0;
-
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
     private Collection $taches;
 
@@ -54,8 +52,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?AchatAvatar $avatarPrincipal = null;
 
     #[ORM\ManyToMany(targetEntity: Avatar::class, inversedBy: 'users')]
+    #[ORM\JoinTable(name: 'user_avatar')]
     private Collection $avatars;
 
+    /**
+     * @var Collection<int, Theme>
+     */
+    #[ORM\ManyToMany(targetEntity: Theme::class, mappedBy: 'users')]
+    private Collection $themes;
+
+    /**
+     * @var Collection<int, AchatTheme>
+     */
+    #[ORM\OneToMany(targetEntity: AchatTheme::class, mappedBy: 'username')]
+    private Collection $achatThemes;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: PulsePoint::class, cascade: ['persist', 'remove'])]
+    private Collection $pulsePoints;
+
+    
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -63,6 +78,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->achatAvatar = new ArrayCollection();
         $this->unlockedGoals = new ArrayCollection();
         $this->avatars = new ArrayCollection();
+        $this->themes = new ArrayCollection();
+        $this->achatThemes = new ArrayCollection();
+        $this->pulsePoints = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -159,23 +177,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getPulsePoints(): int
-    {
-        return $this->pulsePoints;
-    }
-
-    public function setPulsePoints(int $points): self
-    {
-        $this->pulsePoints = $points;
-        return $this;
-    }
-
-    public function addPulsePoints(int $points): self
-    {
-        $this->pulsePoints += $points;
-        return $this;
-    }
-
     public function getAchatsAvatars(): Collection
     {
         return $this->achatAvatar;
@@ -205,7 +206,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function addAvatar(Avatar $avatar): self
     {
         if (!$this->avatars->contains($avatar)) {
-            $this->avatars->add($avatar);
+            $this->avatars[] = $avatar;
+            $avatar->addUser($this);
         }
 
         return $this;
@@ -213,7 +215,103 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function removeAvatar(Avatar $avatar): self
     {
-        $this->avatars->removeElement($avatar);
+        if ($this->avatars->removeElement($avatar)) {
+            $avatar->removeUser($this);
+        }
+
         return $this;
     }
+
+    /**
+     * @return Collection<int, Theme>
+     */
+    public function getThemes(): Collection
+    {
+        return $this->themes;
+    }
+
+    public function addTheme(Theme $theme): static
+    {
+        if (!$this->themes->contains($theme)) {
+            $this->themes->add($theme);
+            $theme->addUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTheme(Theme $theme): static
+    {
+        if ($this->themes->removeElement($theme)) {
+            $theme->removeUser($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, AchatTheme>
+     */
+    public function getAchatThemes(): Collection
+    {
+        return $this->achatThemes;
+    }
+
+    public function addAchatTheme(AchatTheme $achatTheme): static
+    {
+        if (!$this->achatThemes->contains($achatTheme)) {
+            $this->achatThemes->add($achatTheme);
+            $achatTheme->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAchatTheme(AchatTheme $achatTheme): static
+    {
+        if ($this->achatThemes->removeElement($achatTheme)) {
+            // set the owning side to null (unless already changed)
+            if ($achatTheme->getUser() === $this) {
+                $achatTheme->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PulsePoint>
+    */
+    public function getPulsePoints(): Collection
+    {
+        return $this->pulsePoints;
+    }
+
+    public function addPulsePoint(PulsePoint $pulsePoint): self
+    {
+        if (!$this->pulsePoints->contains($pulsePoint)) {
+            $this->pulsePoints[] = $pulsePoint;
+            $pulsePoint->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removePulsePoint(PulsePoint $pulsePoint): self
+    {
+        if ($this->pulsePoints->removeElement($pulsePoint)) {
+        }
+
+        return $this;
+    }
+
+    public function getTotalPulsePoints(): int
+    {
+        $total = 0;
+        foreach ($this->pulsePoints as $pulsePoint) {
+            $total += $pulsePoint->getPoints();
+        }
+        return $total;
+    }
+
 }

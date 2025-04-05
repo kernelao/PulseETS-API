@@ -1,65 +1,83 @@
 <?php
 
 // src/Controller/AdminController.php
-// src/Controller/AdminController.php
 namespace App\Controller;
 
 use App\Entity\Avatar;
-use App\Repository\AvatarRepository;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use App\Entity\Theme;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AdminController extends AbstractController
 {
-    // Activer un avatar
-    #[Route('/api/admin/activate-avatar/{avatarId}', name: 'admin_activate_avatar', methods: ['POST'])]
-    public function activateAvatar(int $avatarId, AvatarRepository $avatarRepository, EntityManagerInterface $em): JsonResponse
+    private $entityManager;
+
+    // Injection de l'EntityManager via le constructeur
+    public function __construct(EntityManagerInterface $entityManager)
     {
-        if (!$this->isGranted('ROLE_ADMIN')) {
-            return new JsonResponse(['message' => 'Accès interdit'], 403);
-        }
-
-        $avatar = $avatarRepository->find($avatarId);
-
-        if (!$avatar) {
-            return new JsonResponse(['message' => 'Avatar introuvable'], 404);
-        }
-
-        $avatar->setActive(true); 
-        $em->flush();
-
-        return new JsonResponse(['message' => 'Avatar activé avec succès', 'avatar' => $avatar->getActive()], 200);
+        $this->entityManager = $entityManager;
     }
 
-    // Désactiver un avatar
-    #[Route('/api/admin/deactivate-avatar/{avatarId}', name: 'admin_deactivate_avatar', methods: ['POST'])]
-    public function deactivateAvatar(int $avatarId, AvatarRepository $avatarRepository, EntityManagerInterface $em): JsonResponse
+    #[Route('/admin/themes', name: 'admin_themes')]
+    public function manageThemes(): Response
     {
-        if (!$this->isGranted('ROLE_ADMIN')) {
-            return new JsonResponse(['message' => 'Accès interdit'], 403);
-        }
+        // Récupérer tous les thèmes via le repository de Doctrine
+        $themes = $this->entityManager->getRepository(Theme::class)->findAll();
 
-        $avatar = $avatarRepository->find($avatarId);
-
-        if (!$avatar) {
-            return new JsonResponse(['message' => 'Avatar introuvable'], 404);
-        }
-
-        $avatar->setActive(false); 
-        $em->flush();
-
-        return new JsonResponse(['message' => 'Avatar désactivé avec succès', 'avatar' => $avatar->getActive()], 200);
+        return $this->render('admin/manage_themes.html.twig', [
+            'themes' => $themes,
+        ]);
     }
 
-    // Basculement de l'état actif d'un avatar
-    #[Route('/admin/avatar/{id}/toggle', name: 'admin_toggle_avatar_status')]
-    public function toggleAvatarStatus(Avatar $avatar, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/admin/avatars', name: 'admin_avatars')]
+    public function manageAvatars(): Response
     {
-        $avatar->setActive(!$avatar->getActive()); 
-        $entityManager->flush();
+        // Récupérer tous les avatars via le repository de Doctrine
+        $avatars = $this->entityManager->getRepository(Avatar::class)->findAll();
 
-        return new JsonResponse(['message' => 'Avatar togglé avec succès', 'avatar' => $avatar->getActive()], 200);
+        return $this->render('admin/manage_avatars.html.twig', [
+            'avatars' => $avatars,
+        ]);
+    }
+
+    // Route pour activer ou désactiver un thème
+    #[Route('/admin/themes/{id}/toggle', name: 'admin_toggle_theme', methods: ['POST'])]
+    public function toggleTheme(int $id): RedirectResponse
+    {
+        $theme = $this->entityManager->getRepository(Theme::class)->find($id);
+
+        if (!$theme) {
+            $this->addFlash('error', 'Le thème n\'a pas été trouvé.');
+            return $this->redirectToRoute('admin_themes');
+        }
+
+        // Inverser l'état du thème
+        $theme->setActive(!$theme->isActive());
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'Le thème a été mis à jour.');
+        return $this->redirectToRoute('admin_themes');
+    }
+
+    // Route pour activer ou désactiver un avatar
+    #[Route('/admin/avatars/{id}/toggle', name: 'admin_toggle_avatar', methods: ['POST'])]
+    public function toggleAvatar(int $id): RedirectResponse
+    {
+        $avatar = $this->entityManager->getRepository(Avatar::class)->find($id);
+
+        if (!$avatar) {
+            $this->addFlash('error', 'L\'avatar n\'a pas été trouvé.');
+            return $this->redirectToRoute('admin_avatars');
+        }
+
+        // Inverser l'état de l'avatar
+        $avatar->setActive(!$avatar->isActive());
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'L\'avatar a été mis à jour.');
+        return $this->redirectToRoute('admin_avatars');
     }
 }
