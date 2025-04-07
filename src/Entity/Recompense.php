@@ -31,6 +31,8 @@ class Recompense
     #[ORM\Column(length: 255)]
     private ?string $avatarOffert = null;
 
+    private $active = true;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -105,6 +107,17 @@ class Recompense
     {
         $this->avatarOffert = $avatarOffert;
 
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function setActive(bool $active): self
+    {
+        $this->active = $active;
         return $this;
     }
 }

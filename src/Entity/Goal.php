@@ -1,9 +1,8 @@
 <?php
 
+// src/Entity/Goal.php
 namespace App\Entity;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -27,18 +26,10 @@ class Goal
     #[ORM\Column(type: 'datetime')]
     private \DateTime $dateCreated;
 
-    /**
-     * @var Collection<int, Recompense>
-     */
-    #[ORM\OneToMany(targetEntity: Recompense::class, mappedBy: 'goal')]
-    private Collection $recompenses;
+    #[ORM\Column(type: 'integer')]
+    private int $points;  // Ajout de la colonne points
 
-    public function __construct()
-    {
-        $this->recompenses = new ArrayCollection();
-    }
-
-    // Getters et setters pour id, user, description, completed, dateCreated
+    // Getters et setters
 
     public function getId(): ?int
     {
@@ -89,33 +80,14 @@ class Goal
         return $this;
     }
 
-    /**
-     * @return Collection<int, Recompense>
-     */
-    public function getRecompenses(): Collection
+    public function getPoints(): int
     {
-        return $this->recompenses;
+        return $this->points;
     }
 
-    public function addRecompense(Recompense $recompense): static
+    public function setPoints(int $points): self
     {
-        if (!$this->recompenses->contains($recompense)) {
-            $this->recompenses->add($recompense);
-            $recompense->setGoal($this);
-        }
-
-        return $this;
-    }
-
-    public function removeRecompense(Recompense $recompense): static
-    {
-        if ($this->recompenses->removeElement($recompense)) {
-            // set the owning side to null (unless already changed)
-            if ($recompense->getGoal() === $this) {
-                $recompense->setGoal(null);
-            }
-        }
-
+        $this->points = $points;
         return $this;
     }
 }

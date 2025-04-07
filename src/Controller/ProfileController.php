@@ -2,77 +2,47 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Password\PasswordHasherInterface;
 use App\Entity\Avatar;
+use App\Entity\Theme;
 use App\Entity\User;
+use App\Form\AvatarType;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/api')]
 final class ProfileController extends AbstractController
 {
     #[Route('/profile', name: 'api_profile', methods: ['GET'])]
-    public function profile(Security $security): JsonResponse
+    public function profile(): JsonResponse
     {
-        $user = $security->getUser();
+        $user = $this->getUser();
 
-        if (!$user) {
+        if (!$user instanceof User) {
             return new JsonResponse(['message' => 'User not found'], 404);
         }
 
-        // Récupérer l'avatar de l'utilisateur
-        $avatar = $user->getAvatar();
+        $avatar = $user->getAvatars()->first(); // ou une autre logique si besoin
+        $recompenses = $user->getRecompenses(); // Assure-toi que cette méthode existe
+        $points = $user->getPulsePoints(); // Pareil ici
 
-        // Construire la réponse avec l'avatar
         return new JsonResponse([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
-            'avatar' => $avatar ? $avatar->getUrl() : null,  // Ajouter l'URL de l'avatar ou null s'il n'y en a pas
+            'avatar' => $avatar ? $avatar->getUrl() : null,
+            'recompenses' => $recompenses,
+            'points' => $points,
         ]);
     }
 
-    #[Route('/profile', name: 'profile')]
-    public function index(Request $request, UserInterface $user)
+    #[Route('/profile/edit', name: 'profile_edit', methods: ['POST'])]
+    public function editProfile(Request $request, EntityManagerInterface $entityManager): Response
     {
-        // Récupérer l'utilisateur connecté
         $user = $this->getUser();
-
-        // Récupérer tous les avatars disponibles
-        $avatars = $this->getDoctrine()->getRepository(Avatar::class)->findAll();
-
-        // Créer le formulaire pour changer l'avatar
-        $form = $this->createForm(AvatarType::class, $user, [
-            'avatars' => $avatars,  // Passer la liste des avatars disponibles
-        ]);
-
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            // Mettre à jour l'avatar principal
-            $this->getDoctrine()->getManager()->flush();
-
-            // Rediriger ou afficher un message de succès
-            $this->addFlash('success', 'Avatar mis à jour avec succès!');
-            return $this->redirectToRoute('profile');
-        }
-
-        return $this->render('profile/index.html.twig', [
-            'form' => $form->createView(),
-        ]);
-    }
-
-
-    #[Route('/edit', name: 'profile_edit', methods: ['POST'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function editProfile(Request $request, Security $security, EntityManagerInterface $entityManager): Response
-    {
-        $user = $security->getUser();
 
         if (!$user instanceof User) {
             return new Response('Utilisateur non valide', 403);
@@ -85,72 +55,110 @@ final class ProfileController extends AbstractController
             return new Response('L\'ancien email est incorrect', 401);
         }
 
-        // Modifier l'email si fourni
         if ($newEmail) {
             $user->setEmail($newEmail);
         }
 
-        // Sauvegarde en base de données
-        $entityManager->persist($user);
         $entityManager->flush();
 
         return new Response('Profil mis à jour avec succès');
     }
 
-    #[Route('/change-password', name: 'change_password', methods: ['POST'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function changePassword(Request $request, Security $security, PasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): Response
+    #[Route('/profile/change-password', name: 'change_password', methods: ['POST'])]
+    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): Response
     {
-    $user = $security->getUser();
+        $user = $this->getUser();
 
-    if (!$user instanceof User) {
-        return new Response('Utilisateur non valide', 403);
+        if (!$user instanceof User) {
+            return new Response('Utilisateur non valide', 403);
+        }
+
+        $oldPassword = $request->request->get('oldPsw');
+        $newPassword = $request->request->get('newPsw');
+
+        if (!$passwordHasher->isPasswordValid($user, $oldPassword)) {
+            return new Response('Ancien mot de passe incorrect', 401);
+        }
+
+        $encodedPassword = $passwordHasher->hashPassword($user, $newPassword);
+        $user->setPassword($encodedPassword);
+
+        $entityManager->flush();
+
+        return new Response('Mot de passe modifié avec succès');
     }
 
-    $oldPassword = $request->request->get('oldPsw');
-    $newPassword = $request->request->get('newPsw');
-
-    // Vérification du mot de passe actuel
-    if (!$passwordHasher->isPasswordValid($user, $oldPassword)) {
-        return new Response('Ancien mot de passe incorrect', 401);
-    }
-
-    // Encoder le nouveau mot de passe
-    $encodedPassword = $passwordHasher->hash($newPassword);
-    $user->setPassword($encodedPassword);
-
-    // Sauvegarde en base de données
-    $entityManager->persist($user);
-    $entityManager->flush();
-
-    return new Response('Mot de passe modifié avec succès');
-    }
-
-    #[Route('/update-avatar', name: 'update_avatar', methods: ['POST'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function updateAvatar(Request $request, Security $security, EntityManagerInterface $entityManager): Response
+    #[Route('/profile/update-avatar', name: 'update_avatar', methods: ['POST'])]
+    public function updateAvatar(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
-    $user = $security->getUser();
+        $user = $this->getUser();
 
-    if (!$user instanceof User) {
-        return new Response('Utilisateur non valide', 403);
+        if (!$user instanceof User) {
+            return new JsonResponse(['message' => 'Utilisateur non valide'], 403);
+        }
+
+        $avatarId = $request->request->get('avatarId');
+        $avatar = $entityManager->getRepository(Avatar::class)->find($avatarId);
+
+        if (!$avatar) {
+            return new JsonResponse(['message' => 'Avatar non trouvé'], 404);
+        }
+
+        $user->addAvatar($avatar);
+        $entityManager->flush();
+
+        return new JsonResponse(['message' => 'Avatar mis à jour avec succès']);
     }
 
-    // Récupère l'id de l'avatar sélectionné
-    $avatarId = $request->request->get('avatarId');
-    $avatar = $entityManager->getRepository(Avatar::class)->find($avatarId);
+    #[Route('/themes', name: 'profile_themes', methods: ['GET'])]
+    public function themes(EntityManagerInterface $entityManager): JsonResponse
+    {
+        $user = $this->getUser();
 
-    if (!$avatar) {
-        return new Response('Avatar non trouvé', 404);
+        if (!$user instanceof User) {
+            return new JsonResponse(['message' => 'User not found'], 404);
+        }
+
+        $themes = $entityManager->getRepository(Theme::class)->findBy(['active' => true]);
+
+        $themeData = array_map(fn($theme) => [
+            'id' => $theme->getId(),
+            'name' => $theme->getName(),
+            'price' => $theme->getPrice(),
+        ], $themes);
+
+        return new JsonResponse($themeData);
     }
 
-    // Met à jour l'avatar de l'utilisateur
-    $user->setAvatar($avatar);
-    $entityManager->persist($user);
-    $entityManager->flush();
+    #[Route('/recompenses', name: 'profile_recompenses', methods: ['GET'])]
+    public function recompenses(): JsonResponse
+    {
+        $user = $this->getUser();
 
-    return new Response('Avatar mis à jour avec succès');
+        if (!$user instanceof User) {
+            return new JsonResponse(['message' => 'User not found'], 404);
+        }
+
+        $recompenses = $user->getRecompenses()->toArray(); 
+
+        $data = array_map(fn($recompense) => [
+            'id' => $recompense->getId(),
+            'name' => $recompense->getName(),
+            'description' => $recompense->getDescription(),
+        ], $recompenses);
+
+        return new JsonResponse($data);
     }
 
+    #[Route('/points', name: 'profile_points', methods: ['GET'])]
+    public function points(): JsonResponse
+    {
+        $user = $this->getUser();
 
+        if (!$user instanceof User) {
+            return new JsonResponse(['message' => 'User not found'], 404);
+        }
+
+        return new JsonResponse(['points' => $user->getPulsePoints()]);
+    }
 }

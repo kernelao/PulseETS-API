@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Entity\AchatAvatar;
 use App\Entity\Goal;
+use App\Entity\Avatar;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Repository\UserRepository;
 use App\Repository\AchatAvatarRepository;
 use App\Repository\GoalRepository;
@@ -32,6 +34,37 @@ class UserController extends AbstractController
         $this->goalRepository = $goalRepository;
         $this->entityManager = $entityManager;
     }
+
+    #[Route('/profile', name: 'user_profile', methods: ['GET'])]
+    public function getProfile(): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return new JsonResponse(['message' => 'Utilisateur non connecté'], 401);
+        }
+
+        $avatarsPossedes = array_map(fn($avatar) => [
+            'id' => $avatar->getId(),
+            'image' => $avatar->getImage(),
+        ], $user->getAvatars()->toArray());
+
+        $recompenses = array_map(fn($r) => [
+            'id' => $r->getId(),
+            'name' => $r->getName(),
+            'description' => $r->getDescription(),
+        ], $user->getRecompenses()->toArray());
+
+        return new JsonResponse([
+            'id' => $user->getId(),
+            'username' => $user->getUserIdentifier(),
+            'avatar' => $user->getAvatars() ?? null,
+            'avatarsPossedes' => $avatarsPossedes,
+            'pulsePoints' => $user->getPulsePoints(),
+            'recompenses' => $recompenses,
+        ]);
+    }
+
 
     #[Route('/user/{id}', name: 'user_profile')]
     public function showUserProfile(int $id): Response

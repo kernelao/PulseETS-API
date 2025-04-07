@@ -5,11 +5,14 @@ namespace App\Controller;
 
 use App\Entity\Avatar;
 use App\Entity\Theme;
+use App\Entity\Recompense;
+use App\Entity\Goal;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class AdminController extends AbstractController
 {
@@ -22,6 +25,7 @@ class AdminController extends AbstractController
     }
 
     #[Route('/admin/themes', name: 'admin_themes')]
+    #[IsGranted('ROLE_ADMIN')]
     public function manageThemes(): Response
     {
         // Récupérer tous les thèmes via le repository de Doctrine
@@ -33,6 +37,7 @@ class AdminController extends AbstractController
     }
 
     #[Route('/admin/avatars', name: 'admin_avatars')]
+    #[IsGranted('ROLE_ADMIN')]
     public function manageAvatars(): Response
     {
         // Récupérer tous les avatars via le repository de Doctrine
@@ -45,6 +50,7 @@ class AdminController extends AbstractController
 
     // Route pour activer ou désactiver un thème
     #[Route('/admin/themes/{id}/toggle', name: 'admin_toggle_theme', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function toggleTheme(int $id): RedirectResponse
     {
         $theme = $this->entityManager->getRepository(Theme::class)->find($id);
@@ -64,6 +70,7 @@ class AdminController extends AbstractController
 
     // Route pour activer ou désactiver un avatar
     #[Route('/admin/avatars/{id}/toggle', name: 'admin_toggle_avatar', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function toggleAvatar(int $id): RedirectResponse
     {
         $avatar = $this->entityManager->getRepository(Avatar::class)->find($id);
@@ -80,4 +87,46 @@ class AdminController extends AbstractController
         $this->addFlash('success', 'L\'avatar a été mis à jour.');
         return $this->redirectToRoute('admin_avatars');
     }
+
+    // Route pour activer ou désactiver une récompense
+    #[Route('/admin/recompenses/{id}/toggle', name: 'admin_toggle_recompense', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function toggleRecompense(int $id): RedirectResponse
+    {
+        $recompense = $this->entityManager->getRepository(Recompense::class)->find($id);
+
+        if (!$recompense) {
+            $this->addFlash('error', 'La récompense n\'a pas été trouvée.');
+            return $this->redirectToRoute('admin_recompenses');
+        }
+
+        // Inverser l'état de la récompense
+        $recompense->setActive(!$recompense->isActive());
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'La récompense a été mise à jour.');
+        return $this->redirectToRoute('admin_recompenses');
+    }
+
+    // Route pour activer ou désactiver un objectif
+    #[Route('/admin/objectifs/{id}/toggle', name: 'admin_toggle_objectif', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function toggleObjectif(int $id): RedirectResponse
+    {
+        $objectif = $this->entityManager->getRepository(Goal::class)->find($id);
+
+        if (!$objectif) {
+            $this->addFlash('error', 'L\'objectif n\'a pas été trouvé.');
+            return $this->redirectToRoute('admin_objectifs');
+        }
+
+        // Inverser l'état de l'objectif
+        $objectif->setActive(!$objectif->isActive());
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'L\'objectif a été mis à jour.');
+        return $this->redirectToRoute('admin_objectifs');
+    }
+
+
 }

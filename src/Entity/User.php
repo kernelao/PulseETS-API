@@ -13,7 +13,7 @@ use App\Entity\Goal;
 use App\Entity\PulsePoint;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: 'user')]
+#[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -51,8 +51,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinColumn(name: "avatar_id", referencedColumnName: "id")]
     private ?AchatAvatar $avatarPrincipal = null;
 
+    /**
+    * @var Collection<int, Avatar>
+    */
     #[ORM\ManyToMany(targetEntity: Avatar::class, inversedBy: 'users')]
-    #[ORM\JoinTable(name: 'user_avatar')]
     private Collection $avatars;
 
     /**
@@ -70,6 +72,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: PulsePoint::class, cascade: ['persist', 'remove'])]
     private Collection $pulsePoints;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Recompense::class)]
+    private Collection $recompenses;
+
     
     public function __construct()
     {
@@ -81,6 +86,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->themes = new ArrayCollection();
         $this->achatThemes = new ArrayCollection();
         $this->pulsePoints = new ArrayCollection();
+        $this->recompenses = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -207,7 +213,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->avatars->contains($avatar)) {
             $this->avatars[] = $avatar;
-            $avatar->addUser($this);
         }
 
         return $this;
@@ -312,6 +317,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $total += $pulsePoint->getPoints();
         }
         return $total;
+    }
+
+    public function getRecompenses(): Collection
+    {
+        return $this->recompenses;
     }
 
 }
