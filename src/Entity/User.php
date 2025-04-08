@@ -41,33 +41,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
     private Collection $taches;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: AchatAvatar::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: AchatAvatar::class)]
     private Collection $achatAvatar;
 
-    #[ORM\ManyToMany(targetEntity: Goal::class)]
-    private Collection $unlockedGoals;
-
-    #[ORM\ManyToOne(targetEntity: AchatAvatar::class)]
+    #[ORM\OneToOne(targetEntity: AchatAvatar::class)]
     #[ORM\JoinColumn(name: "avatar_id", referencedColumnName: "id")]
     private ?AchatAvatar $avatarPrincipal = null;
 
     /**
-    * @var Collection<int, Avatar>
-    */
-    #[ORM\ManyToMany(targetEntity: Avatar::class, inversedBy: 'users')]
-    private Collection $avatars;
-
-    /**
-     * @var Collection<int, Theme>
-     */
-    #[ORM\ManyToMany(targetEntity: Theme::class, mappedBy: 'users')]
-    private Collection $themes;
-
-    /**
      * @var Collection<int, AchatTheme>
      */
-    #[ORM\OneToMany(targetEntity: AchatTheme::class, mappedBy: 'username')]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: AchatTheme::class)]
     private Collection $achatThemes;
+
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: PulsePoint::class, cascade: ['persist', 'remove'])]
     private Collection $pulsePoints;
@@ -75,15 +61,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Recompense::class)]
     private Collection $recompenses;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Goal::class)]
+    private Collection $unlockedGoals;
+
+
     
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->taches = new ArrayCollection();
+        $this->taches = new ArrayCollection(); // 👈 Initialisation de la collection
         $this->achatAvatar = new ArrayCollection();
         $this->unlockedGoals = new ArrayCollection();
-        $this->avatars = new ArrayCollection();
-        $this->themes = new ArrayCollection();
         $this->achatThemes = new ArrayCollection();
         $this->pulsePoints = new ArrayCollection();
         $this->recompenses = new ArrayCollection();
@@ -201,56 +189,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setAvatarPrincipal(?AchatAvatar $avatarPrincipal): self
     {
         $this->avatarPrincipal = $avatarPrincipal;
-        return $this;
-    }
-
-    public function getAvatars(): Collection
-    {
-        return $this->avatars;
-    }
-
-    public function addAvatar(Avatar $avatar): self
-    {
-        if (!$this->avatars->contains($avatar)) {
-            $this->avatars[] = $avatar;
-        }
-
-        return $this;
-    }
-
-    public function removeAvatar(Avatar $avatar): self
-    {
-        if ($this->avatars->removeElement($avatar)) {
-            $avatar->removeUser($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Theme>
-     */
-    public function getThemes(): Collection
-    {
-        return $this->themes;
-    }
-
-    public function addTheme(Theme $theme): static
-    {
-        if (!$this->themes->contains($theme)) {
-            $this->themes->add($theme);
-            $theme->addUser($this);
-        }
-
-        return $this;
-    }
-
-    public function removeTheme(Theme $theme): static
-    {
-        if ($this->themes->removeElement($theme)) {
-            $theme->removeUser($this);
-        }
-
         return $this;
     }
 

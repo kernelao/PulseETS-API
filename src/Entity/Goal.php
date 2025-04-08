@@ -4,6 +4,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity]
 class Goal
@@ -13,9 +14,14 @@ class Goal
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'goals')]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'unlockedGoals')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
+
+
+    #[ORM\OneToMany(mappedBy: 'goal', targetEntity: Recompense::class)]
+    private Collection $recompenses;
+
 
     #[ORM\Column(type: 'string', length: 255)]
     private string $description;

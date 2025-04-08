@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Entity\Avatar;
 use App\Entity\Theme;
 use App\Entity\User;
-use App\Form\AvatarType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,14 +25,29 @@ final class ProfileController extends AbstractController
             return new JsonResponse(['message' => 'User not found'], 404);
         }
 
-        $avatar = $user->getAvatars()->first(); // ou une autre logique si besoin
-        $recompenses = $user->getRecompenses(); // Assure-toi que cette méthode existe
-        $points = $user->getPulsePoints(); // Pareil ici
+        $avatar = $user->getAvatars()->first();
+
+        $avatarsPossedes = [];
+        foreach ($user->getAvatars() as $a) {
+            $avatarsPossedes[] = [
+                'id' => $a->getId(),
+                'image' => $a->getUrl()
+            ];
+        }
+
+        $recompenses = array_map(fn($r) => [
+            'id' => $r->getId(),
+            'name' => $r->getName(),
+            'description' => $r->getDescription()
+        ], $user->getRecompenses()->toArray());
+
+        $points = $user->getPulsePoints()->count();
 
         return new JsonResponse([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
             'avatar' => $avatar ? $avatar->getUrl() : null,
+            'avatarsPossedes' => $avatarsPossedes,
             'recompenses' => $recompenses,
             'points' => $points,
         ]);
@@ -104,8 +118,10 @@ final class ProfileController extends AbstractController
             return new JsonResponse(['message' => 'Avatar non trouvé'], 404);
         }
 
-        $user->addAvatar($avatar);
-        $entityManager->flush();
+        if (!$user->getAvatars()->contains($avatar)) {
+            $user->addAvatar($avatar);
+            $entityManager->flush();
+        }
 
         return new JsonResponse(['message' => 'Avatar mis à jour avec succès']);
     }
@@ -113,7 +129,7 @@ final class ProfileController extends AbstractController
     #[Route('/themes', name: 'profile_themes', methods: ['GET'])]
     public function themes(EntityManagerInterface $entityManager): JsonResponse
     {
-        $user = $this->getUser();
+        $user = $this->getUser(); 
 
         if (!$user instanceof User) {
             return new JsonResponse(['message' => 'User not found'], 404);
@@ -141,6 +157,10 @@ final class ProfileController extends AbstractController
 
         $recompenses = $user->getRecompenses()->toArray(); 
 
+        if (empty($recompenses)) {
+            return new JsonResponse(['message' => 'No rewards found'], 404);
+        }
+
         $data = array_map(fn($recompense) => [
             'id' => $recompense->getId(),
             'name' => $recompense->getName(),
@@ -159,6 +179,26 @@ final class ProfileController extends AbstractController
             return new JsonResponse(['message' => 'User not found'], 404);
         }
 
-        return new JsonResponse(['points' => $user->getPulsePoints()]);
+        return new JsonResponse(['points' => $user->getPulsePoints()->count()]);
+    }
+
+    #[Route('/boutique/profile', name: 'get_boutique_profile', methods: ['GET'])]
+    public function getProfile(): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return new JsonResponse(['message' => 'User not found'], 404);
+        }
+
+        $pulsePoints = $user->getPulsePoints()->count();
+        $unlockedAvatars = $user->getAvatars()->map(fn($avatar) => $avatar->getId());
+        $unlockedThemes = $user->getThemes()->map(fn($theme) => $theme->getId());
+
+        return new JsonResponse([
+            'pulsePoints' => $pulsePoints,
+            'unlockedAvatars' => $unlockedAvatars->toArray(),
+            'unlockedThemes' => $unlockedThemes->toArray(),
+        ], 200);
     }
 }

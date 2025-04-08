@@ -22,12 +22,6 @@ class Theme
     private ?bool $active = null;
 
     /**
-     * @var Collection<int, User>
-     */
-    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'themes')]
-    private Collection $users;
-
-    /**
      * @var Collection<int, AchatTheme>
      */
     #[ORM\OneToMany(targetEntity: AchatTheme::class, mappedBy: 'theme')]
@@ -35,7 +29,6 @@ class Theme
 
     public function __construct()
     {
-        $this->users = new ArrayCollection();
         $this->achatThemes = new ArrayCollection();
     }
 
@@ -71,30 +64,6 @@ class Theme
     public function setActive(bool $active): static
     {
         $this->active = $active;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, User>
-     */
-    public function getUsers(): Collection
-    {
-        return $this->users;
-    }
-
-    public function addUser(User $user): static
-    {
-        if (!$this->users->contains($user)) {
-            $this->users->add($user);
-        }
-
-        return $this;
-    }
-
-    public function removeUser(User $user): static
-    {
-        $this->users->removeElement($user);
 
         return $this;
     }

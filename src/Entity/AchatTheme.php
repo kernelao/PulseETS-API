@@ -14,8 +14,9 @@ class AchatTheme
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'achatThemes')]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'achatThemes')]
     private ?User $user = null;
+
 
     #[ORM\ManyToOne(inversedBy: 'achatThemes')]
     #[ORM\JoinColumn(nullable: false)]

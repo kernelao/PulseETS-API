@@ -28,17 +28,11 @@ class Avatar
 
     #[ORM\Column(type: 'boolean')]
     private bool $active;
-
-    /**
-     * @var Collection<int, User>
-     */
-    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'avatars')]
-    private Collection $users;
+    
 
     public function __construct()
     {
         $this->achats = new ArrayCollection();
-        $this->users = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -92,26 +86,5 @@ class Avatar
         }
 
         return $this;
-    }
-
-    public function getUsers(): Collection
-    {
-        return $this->users;
-    }
-
-    public function addUser(User $user): self
-    {
-        if (!$this->users->contains($user)) {
-            $this->users[] = $user;
-        }
-
-        return $this;
-    }
-
-    public function removeUser(User $user): self
-    {
-        $this->users->removeElement($user);
-
-           return $this;
     }
 }
