@@ -18,11 +18,13 @@ security:
             stateless: true
             provider: app_user_provider
             custom_authenticator: App\Security\LoginAuthAuthenticator
+            jwt: ~
             logout:
                 path: /api/logout
 
     access_control:
         - { path: ^/api/connexion, roles: PUBLIC_ACCESS }
         - { path: ^/api/inscription, roles: PUBLIC_ACCESS }
+        - { path: ^/api/notes, roles: ROLE_USER }
         - { path: ^/api/admin, roles: ROLE_ADMIN }
         - { path: ^/api/, roles: ROLE_USER }
