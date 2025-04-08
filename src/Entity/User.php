@@ -36,12 +36,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private \DateTimeImmutable $createdAt;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
-    private Collection $taches; // 👈 Liste des tâches liées à l’utilisateur
+    private Collection $taches;
+
+    /**
+     * @var Collection<int, Note>
+     */
+    #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'utilisateur')]
+    private Collection $notes; 
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->taches = new ArrayCollection(); // 👈 Initialisation de la collection
+        $this->taches = new ArrayCollection(); 
+        $this->notes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -94,7 +101,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getUsername(): ?string
     {
-        return $this->username;
+        return $this->email;
     }
 
     public function setUsername(?string $username): self
@@ -137,4 +144,40 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    /**
+     * @return Collection<int, Note>
+     */
+    public function getNotes(): Collection
+    {
+        return $this->notes;
+    }
+
+    public function addNote(Note $note): static
+    {
+        if (!$this->notes->contains($note)) {
+            $this->notes->add($note);
+            $note->setUtilisateur($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNote(Note $note): static
+    {
+        if ($this->notes->removeElement($note)) {
+            // set the owning side to null (unless already changed)
+            if ($note->getUtilisateur() === $this) {
+                $note->setUtilisateur(null);
+            }
+        }
+
+        return $this;
+    }
+
+//     public function __toString(): string
+// {
+//     return $this->getEmail(); // Ça va forcer Lexik à mettre l'email comme "username" dans le token
+// }
+
 }
