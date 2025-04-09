@@ -42,10 +42,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $taches;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: AchatAvatar::class)]
-    private Collection $achatAvatar;
+    private Collection $achatsAvatars;    
 
     #[ORM\OneToOne(targetEntity: AchatAvatar::class)]
-    #[ORM\JoinColumn(name: "avatar_id", referencedColumnName: "id")]
     private ?AchatAvatar $avatarPrincipal = null;
 
     /**
@@ -70,7 +69,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->taches = new ArrayCollection(); // 👈 Initialisation de la collection
-        $this->achatAvatar = new ArrayCollection();
+        $this->achatsAvatars = new ArrayCollection();
         $this->unlockedGoals = new ArrayCollection();
         $this->achatThemes = new ArrayCollection();
         $this->pulsePoints = new ArrayCollection();
@@ -173,7 +172,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getAchatsAvatars(): Collection
     {
-        return $this->achatAvatar;
+        return $this->achatsAvatars;
     }
 
     public function getGoals(): Collection

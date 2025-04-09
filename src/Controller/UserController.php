@@ -2,39 +2,25 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
-use App\Entity\AchatAvatar;
-use App\Entity\Goal;
 use App\Entity\Avatar;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Entity\Theme;
+use App\Entity\User;
+use App\Entity\AchatTheme;
+use App\Entity\PulsePoint;
+use App\Entity\AchatAvatar;
 use App\Repository\UserRepository;
-use App\Repository\AchatAvatarRepository;
 use App\Repository\GoalRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use Doctrine\ORM\EntityManagerInterface;
 
-class UserController extends AbstractController
+#[Route('/api')]
+final class UserController extends AbstractController
 {
-    private $userRepository;
-    private $achatAvatarRepository;
-    private $goalRepository;
-    private $entityManager;
-
-    public function __construct(
-        UserRepository $userRepository,
-        AchatAvatarRepository $achatAvatarRepository,
-        GoalRepository $goalRepository,
-        EntityManagerInterface $entityManager
-    ) {
-        $this->userRepository = $userRepository;
-        $this->achatAvatarRepository = $achatAvatarRepository;
-        $this->goalRepository = $goalRepository;
-        $this->entityManager = $entityManager;
-    }
-
     #[Route('/profile', name: 'user_profile', methods: ['GET'])]
     public function getProfile(): JsonResponse
     {
@@ -44,10 +30,15 @@ class UserController extends AbstractController
             return new JsonResponse(['message' => 'Utilisateur non connecté'], 401);
         }
 
-        $avatarsPossedes = array_map(fn($avatar) => [
-            'id' => $avatar->getId(),
-            'image' => $avatar->getImage(),
-        ], $user->getAvatars()->toArray());
+        $avatarsPossedes = array_map(fn($achat) => [
+            'id' => $achat->getAvatar()->getId(),
+            'image' => $achat->getAvatar()->getName(),
+        ], $user->getAchatsAvatars()->toArray());
+
+        $themesPossedes = array_map(fn($achat) => [
+            'id' => $achat->getTheme()->getId(),
+            'name' => $achat->getTheme()->getName(),
+        ], $user->getAchatThemes()->toArray());
 
         $recompenses = array_map(fn($r) => [
             'id' => $r->getId(),
@@ -55,126 +46,118 @@ class UserController extends AbstractController
             'description' => $r->getDescription(),
         ], $user->getRecompenses()->toArray());
 
+        $pulsePoints = $user->getTotalPulsePoints();
+
         return new JsonResponse([
             'id' => $user->getId(),
             'username' => $user->getUserIdentifier(),
-            'avatar' => $user->getAvatars() ?? null,
+            'avatar' => $user->getAvatarPrincipal()?->getAvatar()?->getName(),
             'avatarsPossedes' => $avatarsPossedes,
-            'pulsePoints' => $user->getPulsePoints(),
+            'themesPossedes' => $themesPossedes,
+            'pulsePoints' => $pulsePoints,
             'recompenses' => $recompenses,
         ]);
     }
 
-
-    #[Route('/user/{id}', name: 'user_profile')]
-    public function showUserProfile(int $id): Response
+    #[Route('/profile/edit', name: 'profile_edit', methods: ['POST'])]
+    public function editProfile(Request $request, EntityManagerInterface $entityManager): Response
     {
-        // Récupérer l'utilisateur par son ID
-        $user = $this->userRepository->find($id);
+        $user = $this->getUser();
 
-        // Si l'utilisateur n'existe pas, rediriger vers une page d'erreur
-        if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé.');
+        if (!$user instanceof User) {
+            return new Response('Utilisateur non valide', 403);
         }
 
-        // Récupérer les achats d'avatars et les objectifs de l'utilisateur
-        $achatsAvatars = $this->achatAvatarRepository->findBy(['user' => $user]);
-        $goals = $this->goalRepository->findBy(['user' => $user]);
+        $oldEmail = $request->request->get('oldEmail');
+        $newEmail = $request->request->get('newEmail');
 
-        // Renvoyer la vue avec l'utilisateur, ses achats d'avatars et ses objectifs
-        return $this->render('user/profile.html.twig', [
-            'user' => $user,
-            'achatsAvatars' => $achatsAvatars,
-            'goals' => $goals
-        ]);
+        if ($oldEmail !== $user->getEmail()) {
+            return new Response("L'ancien email est incorrect", 401);
+        }
+
+        if ($newEmail) {
+            $user->setEmail($newEmail);
+        }
+
+        $entityManager->flush();
+
+        return new Response('Profil mis à jour avec succès');
     }
 
-    #[Route('/user/{id}/add_goal', name: 'user_add_goal', methods: ['POST'])]
-    public function addGoal(Request $request, int $id): Response
+    #[Route('/profile/change-password', name: 'change_password', methods: ['POST'])]
+    public function changePassword(Request $request, UserPasswordHasherInterface $passwordHasher, EntityManagerInterface $entityManager): Response
     {
-        // Récupérer l'utilisateur
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé.');
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return new Response('Utilisateur non valide', 403);
         }
 
-        // Créer un nouvel objectif
-        $goal = new Goal();
-        $goal->setUser($user);
-        $goal->setDescription($request->request->get('description'));
-        $goal->setCompleted(false);
-        $goal->setDateCreated(new \DateTime());
+        $oldPassword = $request->request->get('oldPsw');
+        $newPassword = $request->request->get('newPsw');
 
-        // Enregistrer l'objectif en base de données
-        $this->entityManager->persist($goal);
-        $this->entityManager->flush();
+        if (!$passwordHasher->isPasswordValid($user, $oldPassword)) {
+            return new Response('Ancien mot de passe incorrect', 401);
+        }
 
-        // Rediriger vers le profil de l'utilisateur
-        return $this->redirectToRoute('user_profile', ['id' => $user->getId()]);
+        $encodedPassword = $passwordHasher->hashPassword($user, $newPassword);
+        $user->setPassword($encodedPassword);
+
+        $entityManager->flush();
+
+        return new Response('Mot de passe modifié avec succès');
     }
 
-    #[Route('/user/{id}/buy_avatar', name: 'user_buy_avatar', methods: ['POST'])]
-    public function buyAvatar(Request $request, int $id): Response
-    {
-        // Récupérer l'utilisateur
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé.');
-        }
-
-        // Créer un achat d'avatar
-        $achatAvatar = new AchatAvatar();
-        $achatAvatar->setUser($user);
-        $achatAvatar->setDateAchat(new \DateTime());
-
-        // Enregistrer l'achat d'avatar en base de données
-        $this->entityManager->persist($achatAvatar);
-        $this->entityManager->flush();
-
-        // Rediriger vers le profil de l'utilisateur
-        return $this->redirectToRoute('user_profile', ['id' => $user->getId()]);
-    }
-
-    #[Route('/user/{id}/change_avatar', name: 'user_change_avatar', methods: ['POST'])]
-    public function changeAvatar(Request $request, int $id): Response
-    {
-        // Récupérer l'utilisateur
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé.');
-        }
-
-        // Récupérer l'ID de l'avatar sélectionné par l'utilisateur
-        $avatarId = $request->request->get('avatar_id');
-        $avatar = $this->achatAvatarRepository->find($avatarId);
-
-        // Si l'avatar existe, le mettre à jour comme avatar principal
-        if ($avatar) {
-            $user->setAvatarPrincipal($avatar);
-            $this->entityManager->persist($user);
-            $this->entityManager->flush();
-        }
-
-        // Rediriger vers le profil de l'utilisateur
-        return $this->redirectToRoute('user_profile', ['id' => $user->getId()]);
-    }
-
-
-    // Méthode pour afficher une page de gestion des objectifs (si nécessaire)
     #[Route('/user/{id}/goals', name: 'user_goals')]
-    public function manageGoals(int $id): Response
+    public function manageGoals(int $id, UserRepository $userRepository, GoalRepository $goalRepository): Response
     {
-        // Récupérer l'utilisateur et ses objectifs
-        $user = $this->userRepository->find($id);
+        $user = $userRepository->find($id);
+
         if (!$user) {
             throw $this->createNotFoundException('Utilisateur non trouvé.');
         }
-        $goals = $this->goalRepository->findBy(['user' => $user]);
 
-        // Afficher les objectifs
+        $goals = $goalRepository->findBy(['user' => $user]);
+
         return $this->render('user/manage_goals.html.twig', [
             'user' => $user,
             'goals' => $goals
         ]);
+    }
+
+    #[Route('/recompenses', name: 'profile_recompenses', methods: ['GET'])]
+    public function recompenses(): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return new JsonResponse(['message' => 'User not found'], 404);
+        }
+
+        $recompenses = $user->getRecompenses()->toArray();
+
+        if (empty($recompenses)) {
+            return new JsonResponse(['message' => 'No rewards found'], 404);
+        }
+
+        $data = array_map(fn($recompense) => [
+            'id' => $recompense->getId(),
+            'name' => $recompense->getName(),
+            'description' => $recompense->getDescription(),
+        ], $recompenses);
+
+        return new JsonResponse($data);
+    }
+
+    #[Route('/points', name: 'profile_points', methods: ['GET'])]
+    public function points(): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return new JsonResponse(['message' => 'User not found'], 404);
+        }
+
+        return new JsonResponse(['points' => $user->getTotalPulsePoints()]);
     }
 }

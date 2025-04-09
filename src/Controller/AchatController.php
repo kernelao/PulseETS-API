@@ -2,16 +2,15 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
 use App\Entity\Avatar;
 use App\Entity\Theme;
 use App\Service\AchatService;
+use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-
+use Doctrine\ORM\EntityManagerInterface;
 class AchatController extends AbstractController
 {
     private AchatService $achatService;
@@ -21,49 +20,65 @@ class AchatController extends AbstractController
         $this->achatService = $achatService;
     }
 
-    #[Route('/acheter-avatar/{id}', name: 'acheter_avatar')]
-    public function acheterAvatar(Request $request, Avatar $avatar): Response
+    #[Route('/api/user/avatars/{id}/buy', name: 'acheter_avatar', methods: ['POST'])]
+    public function acheterAvatar(Avatar $avatar): JsonResponse
     {
-        // Vérifier que l'utilisateur est connecté
         $user = $this->getUser();
+
         if (!$user) {
-            throw new AccessDeniedException('Vous devez être connecté pour effectuer un achat.');
+            throw new AccessDeniedException("Tu dois être connecté pour acheter un avatar.");
         }
 
-        $pointsRequired = 100; // Exemples de points nécessaires
-        $message = $this->achatService->acheterAvatar($user, $avatar, $pointsRequired);
+        $message = $this->achatService->acheterAvatar($user, $avatar);
 
-        // Flash message pour informer l'utilisateur
-        if (strpos($message, 'Avatar acheté') !== false) {
-            $this->addFlash('success', $message); // Succès de l'achat
-        } else {
-            $this->addFlash('error', $message); // Échec ou erreur
-        }
-
-        // Redirection vers la page de profil ou page d'achat, selon ton besoin
-        return $this->redirectToRoute('profile'); // Remplace par la route que tu veux
+        return new JsonResponse(
+            ['message' => $message],
+            str_contains($message, 'succès') ? JsonResponse::HTTP_OK : JsonResponse::HTTP_BAD_REQUEST
+        );
     }
 
-    #[Route('/acheter-theme/{id}', name: 'acheter_theme')]
-    public function acheterTheme(Request $request, Theme $theme): Response
+    #[Route('/api/user/themes/{id}/buy', name: 'acheter_theme', methods: ['POST'])]
+    public function acheterTheme(Theme $theme): JsonResponse
     {
-        // Vérifier que l'utilisateur est connecté
         $user = $this->getUser();
+
         if (!$user) {
-            throw new AccessDeniedException('Vous devez être connecté pour effectuer un achat.');
+            throw new AccessDeniedException("Tu dois être connecté pour acheter un thème.");
         }
 
-        $pointsRequired = 200; // Exemples de points nécessaires
-        $message = $this->achatService->acheterTheme($user, $theme, $pointsRequired);
+        $message = $this->achatService->acheterTheme($user, $theme);
 
-        // Flash message pour informer l'utilisateur
-        if (strpos($message, 'Thème acheté') !== false) {
-            $this->addFlash('success', $message); // Succès de l'achat
-        } else {
-            $this->addFlash('error', $message); // Échec ou erreur
-        }
-
-        // Redirection vers la page de profil ou page d'achat, selon ton besoin
-        return $this->redirectToRoute('profile'); // Remplace par la route que tu veux
+        return new JsonResponse(
+            ['message' => $message],
+            str_contains($message, 'succès') ? JsonResponse::HTTP_OK : JsonResponse::HTTP_BAD_REQUEST
+        );
     }
+
+    #[Route('/api/user/theme/apply/{id}', name: 'apply_theme', methods: ['POST'])]
+public function applyTheme(int $id, EntityManagerInterface $em): JsonResponse
+{
+    $user = $this->getUser();
+
+    if (!$user instanceof User) {
+        return new JsonResponse(['message' => 'Utilisateur non connecté.'], 403);
+    }
+
+    $theme = $em->getRepository(Theme::class)->find($id);
+    if (!$theme) {
+        return new JsonResponse(['message' => 'Thème introuvable.'], 404);
+    }
+
+    $owned = $user->getAchatThemes()->exists(fn($key, $achat) => $achat->getTheme() === $theme);
+    if (!$owned) {
+        return new JsonResponse(['message' => 'Thème non acheté.'], 403);
+    }
+
+    // On pourrait avoir un champ "themeActif" si tu veux le garder en base
+    // $user->setThemeActif($theme); // À créer si souhaité
+
+    $em->flush();
+
+    return new JsonResponse(['message' => 'Thème appliqué avec succès.']);
+}
+
 }
