@@ -36,12 +36,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private \DateTimeImmutable $createdAt;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
-    private Collection $taches; // 👈 Liste des tâches liées à l’utilisateur
+    private Collection $taches;
+
+    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
+    private ?Reglages $reglagesDeUser = null;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->taches = new ArrayCollection(); // 👈 Initialisation de la collection
+        $this->taches = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -71,7 +74,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if (!in_array('ROLE_USER', $roles)) {
             $roles[] = 'ROLE_USER';
         }
-
         return array_unique($roles);
     }
 
@@ -121,9 +123,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->taches->contains($tache)) {
             $this->taches[] = $tache;
-            $tache->setUser($this); // 👈 Associer l’utilisateur à la tâche
+            $tache->setUser($this);
         }
-
         return $this;
     }
 
@@ -131,10 +132,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->taches->removeElement($tache)) {
             if ($tache->getUser() === $this) {
-                $tache->setUser(null); // 👈 Retirer la relation
+                $tache->setUser(null);
             }
         }
+        return $this;
+    }
 
+    public function getReglagesDeUser(): ?Reglages
+    {
+        return $this->reglagesDeUser;
+    }
+
+    public function setReglagesDeUser(?Reglages $reglagesDeUser): static
+    {
+        if ($reglagesDeUser === null && $this->reglagesDeUser !== null) {
+            $this->reglagesDeUser->setUser(null);
+        }
+
+        if ($reglagesDeUser !== null && $reglagesDeUser->getUser() !== $this) {
+            $reglagesDeUser->setUser($this);
+        }
+
+        $this->reglagesDeUser = $reglagesDeUser;
         return $this;
     }
 }
