@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250407011102 extends AbstractMigration
+final class Version20250409020430 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -54,40 +54,16 @@ final class Version20250407011102 extends AbstractMigration
             CREATE INDEX IDX_489C9459A76ED395 ON pulse_point (user_id)
         SQL);
         $this->addSql(<<<'SQL'
-            CREATE TABLE recompense (id INT IDENTITY NOT NULL, goal_id INT, type NVARCHAR(255) NOT NULL, nom NVARCHAR(50) NOT NULL, valeur INT NOT NULL, description NVARCHAR(255) NOT NULL, avatar_offert NVARCHAR(255) NOT NULL, PRIMARY KEY (id))
+            CREATE TABLE recompense (id INT IDENTITY NOT NULL, goal_id INT, user_id INT NOT NULL, type NVARCHAR(255) NOT NULL, nom NVARCHAR(50) NOT NULL, valeur INT NOT NULL, description NVARCHAR(255) NOT NULL, avatar_offert NVARCHAR(255) NOT NULL, PRIMARY KEY (id))
         SQL);
         $this->addSql(<<<'SQL'
             CREATE INDEX IDX_1E9BC0DE667D1AFE ON recompense (goal_id)
         SQL);
         $this->addSql(<<<'SQL'
+            CREATE INDEX IDX_1E9BC0DEA76ED395 ON recompense (user_id)
+        SQL);
+        $this->addSql(<<<'SQL'
             CREATE TABLE theme (id INT IDENTITY NOT NULL, name NVARCHAR(25) NOT NULL, active BIT NOT NULL, PRIMARY KEY (id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE TABLE theme_user (theme_id INT NOT NULL, user_id INT NOT NULL, PRIMARY KEY (theme_id, user_id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_C754227459027487 ON theme_user (theme_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_C7542274A76ED395 ON theme_user (user_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE TABLE user_goal (user_id INT NOT NULL, goal_id INT NOT NULL, PRIMARY KEY (user_id, goal_id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_865DA7E7A76ED395 ON user_goal (user_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_865DA7E7667D1AFE ON user_goal (goal_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE TABLE user_avatar (user_id INT NOT NULL, avatar_id INT NOT NULL, PRIMARY KEY (user_id, avatar_id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_73256912A76ED395 ON user_avatar (user_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_7325691286383B10 ON user_avatar (avatar_id)
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE achat_avatar ADD CONSTRAINT FK_D20E12EAA76ED395 FOREIGN KEY (user_id) REFERENCES [user] (id)
@@ -111,31 +87,16 @@ final class Version20250407011102 extends AbstractMigration
             ALTER TABLE recompense ADD CONSTRAINT FK_1E9BC0DE667D1AFE FOREIGN KEY (goal_id) REFERENCES goal (id)
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE theme_user ADD CONSTRAINT FK_C754227459027487 FOREIGN KEY (theme_id) REFERENCES theme (id) ON DELETE CASCADE
+            ALTER TABLE recompense ADD CONSTRAINT FK_1E9BC0DEA76ED395 FOREIGN KEY (user_id) REFERENCES [user] (id)
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE theme_user ADD CONSTRAINT FK_C7542274A76ED395 FOREIGN KEY (user_id) REFERENCES [user] (id) ON DELETE CASCADE
+            ALTER TABLE [user] ADD avatar_principal_id INT
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE user_goal ADD CONSTRAINT FK_865DA7E7A76ED395 FOREIGN KEY (user_id) REFERENCES [user] (id) ON DELETE CASCADE
+            ALTER TABLE [user] ADD CONSTRAINT FK_8D93D649BCC52533 FOREIGN KEY (avatar_principal_id) REFERENCES achat_avatar (id)
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE user_goal ADD CONSTRAINT FK_865DA7E7667D1AFE FOREIGN KEY (goal_id) REFERENCES goal (id) ON DELETE CASCADE
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE user_avatar ADD CONSTRAINT FK_73256912A76ED395 FOREIGN KEY (user_id) REFERENCES [user] (id) ON DELETE CASCADE
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE user_avatar ADD CONSTRAINT FK_7325691286383B10 FOREIGN KEY (avatar_id) REFERENCES avatar (id) ON DELETE CASCADE
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE [user] ADD avatar_id INT
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE [user] ADD CONSTRAINT FK_8D93D64986383B10 FOREIGN KEY (avatar_id) REFERENCES achat_avatar (id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_8D93D64986383B10 ON [user] (avatar_id)
+            CREATE UNIQUE INDEX UNIQ_8D93D649BCC52533 ON [user] (avatar_principal_id) WHERE avatar_principal_id IS NOT NULL
         SQL);
     }
 
@@ -173,7 +134,10 @@ final class Version20250407011102 extends AbstractMigration
             CREATE SCHEMA dbo
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE [user] DROP CONSTRAINT FK_8D93D64986383B10
+            ALTER TABLE [user] DROP CONSTRAINT FK_8D93D649BCC52533
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE UNIQUE NONCLUSTERED INDEX UNIQ_46E7DCFA76ED395 ON reglages (user_id) WHERE user_id IS NOT NULL
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE achat_avatar DROP CONSTRAINT FK_D20E12EAA76ED395
@@ -197,22 +161,7 @@ final class Version20250407011102 extends AbstractMigration
             ALTER TABLE recompense DROP CONSTRAINT FK_1E9BC0DE667D1AFE
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE theme_user DROP CONSTRAINT FK_C754227459027487
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE theme_user DROP CONSTRAINT FK_C7542274A76ED395
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE user_goal DROP CONSTRAINT FK_865DA7E7A76ED395
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE user_goal DROP CONSTRAINT FK_865DA7E7667D1AFE
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE user_avatar DROP CONSTRAINT FK_73256912A76ED395
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE user_avatar DROP CONSTRAINT FK_7325691286383B10
+            ALTER TABLE recompense DROP CONSTRAINT FK_1E9BC0DEA76ED395
         SQL);
         $this->addSql(<<<'SQL'
             DROP TABLE achat_avatar
@@ -236,19 +185,10 @@ final class Version20250407011102 extends AbstractMigration
             DROP TABLE theme
         SQL);
         $this->addSql(<<<'SQL'
-            DROP TABLE theme_user
+            DROP INDEX UNIQ_8D93D649BCC52533 ON [user]
         SQL);
         $this->addSql(<<<'SQL'
-            DROP TABLE user_goal
-        SQL);
-        $this->addSql(<<<'SQL'
-            DROP TABLE user_avatar
-        SQL);
-        $this->addSql(<<<'SQL'
-            DROP INDEX IDX_8D93D64986383B10 ON [user]
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE [user] DROP COLUMN avatar_id
+            ALTER TABLE [user] DROP COLUMN avatar_principal_id
         SQL);
     }
 }
