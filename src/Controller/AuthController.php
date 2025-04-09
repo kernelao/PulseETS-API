@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\Achat;
+use App\Entity\Element;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,6 +31,21 @@ class AuthController extends AbstractController
 
         $em->persist($user);
         $em->flush();
+
+        $avatar = $em->getRepository(Element::class)->findOneBy([
+            'name' => 'defautavatar',
+            'type' => 'avatar'
+        ]);
+
+        if($avatar) {
+            $achat = new Achat();
+            $achat->setUtilisateur($user);
+            $achat->setElement($avatar);
+            $achat->setDateAchat(new \DateTimeImmutable());
+
+            $em->persist($achat);
+            $em->flush();
+        }
 
         return new JsonResponse(['message' => 'Inscription réussie'], 201);
     }
