@@ -38,9 +38,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
     private Collection $taches;
 
-    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
-    private ?Reglages $reglagesDeUser = null;
-
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -138,22 +135,4 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getReglagesDeUser(): ?Reglages
-    {
-        return $this->reglagesDeUser;
-    }
-
-    public function setReglagesDeUser(?Reglages $reglagesDeUser): static
-    {
-        if ($reglagesDeUser === null && $this->reglagesDeUser !== null) {
-            $this->reglagesDeUser->setUser(null);
-        }
-
-        if ($reglagesDeUser !== null && $reglagesDeUser->getUser() !== $this) {
-            $reglagesDeUser->setUser($this);
-        }
-
-        $this->reglagesDeUser = $reglagesDeUser;
-        return $this;
-    }
 }
