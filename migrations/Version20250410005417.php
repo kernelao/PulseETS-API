@@ -42,3 +42,4 @@ final class Version20250410005417 extends AbstractMigration
         $this->addSql('DROP TABLE note');
     }
 }
+

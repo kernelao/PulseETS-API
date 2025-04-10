@@ -35,6 +35,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
+
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
     private Collection $taches;
 
@@ -63,15 +64,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $achats;
 
 
+
+      /**
+     * @var Collection<int, PomodoroSession>
+     */
+    #[ORM\OneToMany(targetEntity: PomodoroSession::class, mappedBy: 'user')]
+    private Collection $pomodoroSessions;
+      
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->taches = new ArrayCollection(); 
         $this->notes = new ArrayCollection();
-        $this->pulsePoints = new ArrayCollection();
-        $this->themeName = new ArrayCollection();
-        $this->recompenses = new ArrayCollection();
-        $this->achats = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -142,6 +146,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
     }
 
+
+   
+    
+
+  
     public function getTaches(): Collection
     {
         return $this->taches;
@@ -151,7 +160,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->taches->contains($tache)) {
             $this->taches[] = $tache;
-            $tache->setUser($this); // 👈 Associer l’utilisateur à la tâche
+            $tache->setUser($this); 
         }
 
         return $this;
@@ -161,7 +170,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->taches->removeElement($tache)) {
             if ($tache->getUser() === $this) {
-                $tache->setUser(null); // 👈 Retirer la relation
+                $tache->setUser(null);
             }
         }
 
@@ -181,6 +190,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if (!$this->notes->contains($note)) {
             $this->notes->add($note);
             $note->setUtilisateur($this);
+          
+             public function getPomodoroSessions(): Collection
+    {
+        return $this->pomodoroSessions;
+    }
+
+    public function addPomodoroSession(PomodoroSession $pomodoroSession): static
+    {
+        if (!$this->pomodoroSessions->contains($pomodoroSession)) {
+            $this->pomodoroSessions->add($pomodoroSession);
+            $pomodoroSession->setUser($this);
+        
+
+        }
+
+        return $this;
+    }
+
+
+    public function removePomodoroSession(PomodoroSession $pomodoroSession): static
+    {
+        if ($this->pomodoroSessions->removeElement($pomodoroSession)) {
+            // set the owning side to null (unless already changed)
+            if ($pomodoroSession->getUser() === $this) {
+                $pomodoroSession->setUser(null);
+                 }
         }
 
         return $this;
