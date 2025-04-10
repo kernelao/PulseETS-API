@@ -6,7 +6,7 @@ security:
         app_user_provider:
             entity:
                 class: App\Entity\User
-                property: username
+                property: email
 
     firewalls:
         dev:
@@ -28,6 +28,9 @@ security:
         - { path: ^/api/inscription, roles: PUBLIC_ACCESS }
         
         # Accès limité aux administrateurs pour toutes les routes /api/admin
+
+        - { path: ^/api/notes, roles: ROLE_USER }
+
         - { path: ^/api/admin, roles: ROLE_ADMIN }
         
         # Accès pour les utilisateurs ayant au moins ROLE_USER pour les autres routes API
