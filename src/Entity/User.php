@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Entity\PomodoroSession;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -43,6 +44,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'utilisateur')]
     private Collection $notes;
+
+    #[ORM\OneToMany(mappedBy: 'utilisateur', targetEntity: PulsePoint::class, orphanRemoval: true)]
+    private Collection $pulsePoints;
+
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private ?string $themeName = null;
+
+    #[ORM\ManyToOne]
+    private ?Element $avatarPrincipal = null;
+
+    /**
+     * @var Collection<int, Recompense>
+     */
+    #[ORM\OneToMany(targetEntity: Recompense::class, mappedBy: 'utilisateur')]
+    private Collection $recompenses;
+
+    #[ORM\OneToMany(mappedBy: 'utilisateur', targetEntity: Achat::class)]
+    private Collection $achats;
+
+
+
 
     /**
      * @var Collection<int, PomodoroSession>
@@ -167,6 +189,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $note->setUtilisateur($this);
         }
 
+
         return $this;
     }
 
@@ -206,6 +229,81 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function getPulsePoints(): Collection
+    {
+        return $this->pulsePoints;
+    }
+
+    public function getTotalPulsePoints(): int
+    {
+        return array_reduce($this->pulsePoints->toArray(), function ($carry, PulsePoint $point) {
+            return $carry + $point->getPoints();
+        }, 0);
+    }
+
+    public function getThemeName(): ?string
+    {
+        return $this->themeName;
+    }
+
+    public function setThemeName(?string $themeName): self
+    {
+        $this->themeName = $themeName;
+        return $this;
+    }
+
+    public function getAvatarPrincipal(): ?Element
+    {
+        return $this->avatarPrincipal;
+    }
+
+    public function setAvatarPrincipal(?Element $avatarPrincipal): self
+    {
+        $this->avatarPrincipal = $avatarPrincipal;
+        return $this;
+    }
+
+
+//     public function __toString(): string
+// {
+//     return $this->getEmail(); // Ça va forcer Lexik à mettre l'email comme "username" dans le token
+// }
+
+/**
+ * @return Collection<int, Recompense>
+ */
+public function getRecompenses(): Collection
+{
+    return $this->recompenses;
+}
+
+public function addRecompense(Recompense $recompense): static
+{
+    if (!$this->recompenses->contains($recompense)) {
+        $this->recompenses->add($recompense);
+        $recompense->setUtilisateur($this);
+    }
+
+    return $this;
+
+}
+public function removeRecompense(Recompense $recompense): static
+{
+    if ($this->recompenses->removeElement($recompense)) {
+        // set the owning side to null (unless already changed)
+        if ($recompense->getUtilisateur() === $this) {
+            $recompense->setUtilisateur(null);
+        }
+    }
+
+    return $this;
+}
+
+public function getAchats(): Collection
+{
+    return $this->achats;
+}
 
     //     public function __toString(): string
     // {
