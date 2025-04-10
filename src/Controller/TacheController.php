@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Controller;
 
 use App\Entity\Tache;
@@ -8,6 +7,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -28,7 +28,7 @@ class TacheController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
         $user = $this->getUser();
-
+    
         $tache = new Tache();
         $tache->setTitre($data['titre'] ?? '');
         $tache->setDescription($data['description'] ?? null);
@@ -36,12 +36,17 @@ class TacheController extends AbstractController
         $tache->setPriority($data['priority'] ?? null);
         $tache->setCompleted($data['completed'] ?? false);
         $tache->setPinned($data['pinned'] ?? false);
-        $tache->setUser($user); // 👈 Lier la tâche à l'utilisateur connecté
-
+        $tache->setUser($user);
+    
         if (!empty($data['dueDate'])) {
-            $tache->setDueDate(new \DateTime($data['dueDate']));
+            // Assurer que la dueDate est bien en format 'Y-m-d'
+            $dueDate = \DateTime::createFromFormat('Y-m-d', $data['dueDate']);
+            if ($dueDate === false) {
+                return $this->json(['error' => 'Date invalide.'], 400);
+            }
+            $tache->setDueDate($dueDate);
         }
-
+    
         $errors = $validator->validate($tache);
         if (count($errors) > 0) {
             $errorMessages = [];
@@ -50,12 +55,13 @@ class TacheController extends AbstractController
             }
             return $this->json(['errors' => $errorMessages], 400);
         }
-
+    
         $em->persist($tache);
         $em->flush();
-
+    
         return $this->json($tache, 201, [], ['groups' => 'tache:read']);
     }
+    
 
     #[Route('/{id}', name: 'show', methods: ['GET'])]
     public function show(Tache $tache): JsonResponse
@@ -68,49 +74,79 @@ class TacheController extends AbstractController
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
-    public function update(Request $request, Tache $tache, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
-    {
-        if ($tache->getUser() !== $this->getUser()) {
-            return $this->json(['error' => 'Accès interdit à cette tâche.'], 403);
-        }
-
-        $data = json_decode($request->getContent(), true);
-
-        $tache->setTitre($data['titre'] ?? $tache->getTitre());
-        $tache->setDescription($data['description'] ?? $tache->getDescription());
-        $tache->setTag($data['tag'] ?? $tache->getTag());
-        $tache->setPriority($data['priority'] ?? $tache->getPriority());
-        $tache->setCompleted($data['completed'] ?? $tache->isCompleted());
-        $tache->setPinned($data['pinned'] ?? $tache->isPinned());
-
-        if (!empty($data['dueDate'])) {
-            $tache->setDueDate(new \DateTime($data['dueDate']));
-        }
-
-        $errors = $validator->validate($tache);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[$error->getPropertyPath()] = $error->getMessage();
-            }
-            return $this->json(['errors' => $errorMessages], 400);
-        }
-
-        $em->flush();
-
-        return $this->json($tache, 200, [], ['groups' => 'tache:read']);
+public function update(Request $request, Tache $tache, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
+{
+    if ($tache->getUser() !== $this->getUser()) {
+        return $this->json(['error' => 'Accès interdit à cette tâche.'], 403);
     }
+
+    $data = json_decode($request->getContent(), true);
+
+    // Log temporaire pour debug (à retirer une fois que ça fonctionne)
+    // dd($data);
+
+    if (isset($data['titre'])) {
+        $tache->setTitre($data['titre']);
+    }
+
+    if (array_key_exists('description', $data)) {
+        $tache->setDescription($data['description']); // même si vide, on veut pouvoir effacer
+    }
+
+    if (isset($data['tag'])) {
+        $tache->setTag($data['tag']);
+    }
+
+    if (isset($data['priority'])) {
+        $tache->setPriority($data['priority']);
+    }
+
+    if (isset($data['completed'])) {
+        $tache->setCompleted($data['completed']);
+    }
+
+    if (isset($data['pinned'])) {
+        $tache->setPinned($data['pinned']);
+    }
+
+    if (array_key_exists('dueDate', $data)) {
+        $dueDate = \DateTime::createFromFormat('Y-m-d', $data['dueDate']);
+        if (!$dueDate) {
+            return $this->json(['error' => 'Date invalide. Format attendu : Y-m-d'], 400);
+        }
+        $tache->setDueDate($dueDate);
+    }
+
+    $errors = $validator->validate($tache);
+    if (count($errors) > 0) {
+        $errorMessages = [];
+        foreach ($errors as $error) {
+            $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+        }
+        return $this->json(['errors' => $errorMessages], 400);
+    }
+
+    $em->flush();
+
+    return $this->json($tache, 200, [], ['groups' => 'tache:read']);
+}
 
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
-    public function delete(Tache $tache, EntityManagerInterface $em): JsonResponse
+    public function delete(string $id, TacheRepository $repo, EntityManagerInterface $em): JsonResponse
     {
+        $tache = $repo->find($id);
+    
+        if (!$tache) {
+            return $this->json(['error' => 'Tâche introuvable.'], 404);
+        }
+    
         if ($tache->getUser() !== $this->getUser()) {
             return $this->json(['error' => 'Accès interdit à cette tâche.'], 403);
         }
-
+    
         $em->remove($tache);
         $em->flush();
-
+    
         return $this->json(null, 204);
     }
-}
+}    
