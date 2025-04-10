@@ -23,8 +23,15 @@ security:
                 path: /api/logout
 
     access_control:
+        # Accès public pour la connexion et l'inscription
         - { path: ^/api/connexion, roles: PUBLIC_ACCESS }
         - { path: ^/api/inscription, roles: PUBLIC_ACCESS }
+        
+        # Accès limité aux administrateurs pour toutes les routes /api/admin
+
         - { path: ^/api/notes, roles: ROLE_USER }
+
         - { path: ^/api/admin, roles: ROLE_ADMIN }
+        
+        # Accès pour les utilisateurs ayant au moins ROLE_USER pour les autres routes API
         - { path: ^/api/, roles: ROLE_USER }
