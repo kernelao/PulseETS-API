@@ -36,7 +36,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
-
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tache::class, orphanRemoval: true)]
     private Collection $taches;
 
@@ -44,7 +43,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var Collection<int, Note>
      */
     #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'utilisateur')]
-    private Collection $notes; 
+    private Collection $notes;
 
     #[ORM\OneToMany(mappedBy: 'utilisateur', targetEntity: PulsePoint::class, orphanRemoval: true)]
     private Collection $pulsePoints;
@@ -66,16 +65,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
 
 
-      /**
+
+    /**
      * @var Collection<int, PomodoroSession>
      */
     #[ORM\OneToMany(targetEntity: PomodoroSession::class, mappedBy: 'user')]
     private Collection $pomodoroSessions;
-      
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->taches = new ArrayCollection(); 
+        $this->taches = new ArrayCollection();
         $this->notes = new ArrayCollection();
         $this->pomodoroSessions = new ArrayCollection();
     }
@@ -148,11 +148,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
     }
 
-
-   
-    
-
-  
     public function getTaches(): Collection
     {
         return $this->taches;
@@ -162,7 +157,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->taches->contains($tache)) {
             $this->taches[] = $tache;
-            $tache->setUser($this); 
+            $tache->setUser($this);
         }
 
         return $this;
@@ -193,6 +188,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->notes->add($note);
             $note->setUtilisateur($this);
         }
+
+
+        return $this;
+    }
+
+    public function removeNote(Note $note): static
+    {
+        if ($this->notes->removeElement($note)) {
+            if ($note->getUtilisateur() === $this) {
+                $note->setUtilisateur(null);
+            }
+        }
+
         return $this;
     }
 
@@ -206,32 +214,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if (!$this->pomodoroSessions->contains($pomodoroSession)) {
             $this->pomodoroSessions->add($pomodoroSession);
             $pomodoroSession->setUser($this);
-        
-
         }
 
         return $this;
     }
-
 
     public function removePomodoroSession(PomodoroSession $pomodoroSession): static
     {
         if ($this->pomodoroSessions->removeElement($pomodoroSession)) {
-            // set the owning side to null (unless already changed)
             if ($pomodoroSession->getUser() === $this) {
                 $pomodoroSession->setUser(null);
-                 }
-        }
-
-        return $this;
-    }
-
-    public function removeNote(Note $note): static
-    {
-        if ($this->notes->removeElement($note)) {
-            // set the owning side to null (unless already changed)
-            if ($note->getUtilisateur() === $this) {
-                $note->setUtilisateur(null);
             }
         }
 
@@ -294,8 +286,8 @@ public function addRecompense(Recompense $recompense): static
     }
 
     return $this;
-}
 
+}
 public function removeRecompense(Recompense $recompense): static
 {
     if ($this->recompenses->removeElement($recompense)) {
@@ -313,4 +305,8 @@ public function getAchats(): Collection
     return $this->achats;
 }
 
+    //     public function __toString(): string
+    // {
+    //     return $this->getEmail(); // Ça va forcer Lexik à mettre l'email comme "username" dans le token
+    // }
 }

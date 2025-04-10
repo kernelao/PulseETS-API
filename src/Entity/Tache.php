@@ -13,7 +13,7 @@ class Tache
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: 'bigint')] // ✅ Changement ici pour éviter l'overflow
     #[Groups('tache:read')]
     private ?int $id = null;
 
