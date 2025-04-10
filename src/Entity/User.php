@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Entity\PomodoroSession;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -76,6 +77,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->createdAt = new \DateTimeImmutable();
         $this->taches = new ArrayCollection(); 
         $this->notes = new ArrayCollection();
+        $this->pomodoroSessions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -190,8 +192,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         if (!$this->notes->contains($note)) {
             $this->notes->add($note);
             $note->setUtilisateur($this);
-          
-             public function getPomodoroSessions(): Collection
+        }
+        return $this;
+    }
+
+    public function getPomodoroSessions(): Collection
     {
         return $this->pomodoroSessions;
     }
