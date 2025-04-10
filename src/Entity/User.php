@@ -101,7 +101,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getUsername(): ?string
     {
-        return $this->email;
+        return $this->username;
     }
 
     public function setUsername(?string $username): self
@@ -128,7 +128,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->taches->contains($tache)) {
             $this->taches[] = $tache;
-            $tache->setUser($this); // 👈 Associer l’utilisateur à la tâche
+            $tache->setUser($this); 
         }
 
         return $this;
@@ -138,7 +138,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->taches->removeElement($tache)) {
             if ($tache->getUser() === $this) {
-                $tache->setUser(null); // 👈 Retirer la relation
+                $tache->setUser(null);
             }
         }
 
