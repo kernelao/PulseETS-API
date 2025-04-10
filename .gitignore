@@ -41,3 +41,8 @@
 
 # SQLite (si jamais on testes avec)
 *.sqlite
+symfony.lock
+config/bundles.php
+composer.lock
+composer.json
+.env
