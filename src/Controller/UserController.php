@@ -27,9 +27,11 @@ class UserController extends AbstractController
 
     #[Route('/profile', name: 'get_user_profile', methods: ['GET'])]
     public function profile(
+        
         AchatRepository $achatRepository,
         PulsePointRepository $pulseRepo
         ): JsonResponse {
+            
         $user = $this->getUser();
 
         if (!$user instanceof User) {
@@ -60,6 +62,8 @@ class UserController extends AbstractController
             'unlockedThemes' => $themes,
             'themeName' => $user->getThemeName(),
             'avatarPrincipal' => $user->getAvatarPrincipal()?->getName(),
+            'themeName' => $user->getThemeName(),
+
         ]);
     }
 
@@ -165,15 +169,12 @@ class UserController extends AbstractController
         foreach ($achats as $achat) {
             $element = $achat->getElement();
             if ($element->getType() === 'avatar' && $element->getName() === $avatarName) {
-                $user->setAvatarPrincipal($achat);
+                $user->setAvatarPrincipal($achat->getElement());
                 $em->flush();
     
                 return new JsonResponse(['message' => 'Avatar principal mis à jour avec succès']);
             }
         }
-
-        $data = json_decode($request->getContent(), true);
-dd($data);
 
     
         return new JsonResponse(['message' => 'Avatar non trouvé ou non débloqué'], 404);
