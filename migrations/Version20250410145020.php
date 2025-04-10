@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250410043456 extends AbstractMigration
+final class Version20250410145020 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -21,64 +21,16 @@ final class Version20250410043456 extends AbstractMigration
     {
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql(<<<'SQL'
-            CREATE TABLE achat (id INT IDENTITY NOT NULL, utilisateur_id INT NOT NULL, element_id INT NOT NULL, date_achat DATETIME2(6) NOT NULL, is_active BIT, PRIMARY KEY (id))
+            ALTER TABLE reglages DROP CONSTRAINT FK_46E7DCFACDE6C3
         SQL);
         $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_26A98456FB88E14F ON achat (utilisateur_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_26A984561F1F2A24 ON achat (element_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE TABLE note (id INT IDENTITY NOT NULL, utilisateur_id INT NOT NULL, titre NVARCHAR(255) NOT NULL, contenu VARCHAR(MAX), categorie NVARCHAR(255), PRIMARY KEY (id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_CFBDFA14FB88E14F ON note (utilisateur_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE TABLE pulse_point (id INT IDENTITY NOT NULL, utilisateur_id INT NOT NULL, points INT NOT NULL, date_created DATETIME2(6) NOT NULL, PRIMARY KEY (id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_489C9459FB88E14F ON pulse_point (utilisateur_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            EXEC sp_addextendedproperty N'MS_Description', N'(DC2Type:datetime_immutable)', N'SCHEMA', 'dbo', N'TABLE', 'pulse_point', N'COLUMN', 'date_created'
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE TABLE recompense (id INT IDENTITY NOT NULL, utilisateur_id INT NOT NULL, type NVARCHAR(50) NOT NULL, seuil INT NOT NULL, date_debloquee DATETIME2(6) NOT NULL, nom NVARCHAR(255) NOT NULL, valeur INT NOT NULL, description NVARCHAR(255) NOT NULL, avatar_offert NVARCHAR(255), PRIMARY KEY (id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_1E9BC0DEFB88E14F ON recompense (utilisateur_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE TABLE tache (id INT IDENTITY NOT NULL, user_id INT, titre NVARCHAR(255) NOT NULL, description VARCHAR(MAX), tag NVARCHAR(100), due_date DATETIME2(6) NOT NULL, priority NVARCHAR(20), completed BIT NOT NULL, pinned BIT NOT NULL, created_at DATETIME2(6) NOT NULL, PRIMARY KEY (id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE INDEX IDX_93872075A76ED395 ON tache (user_id)
+            DROP TABLE reglages
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE achat ADD CONSTRAINT FK_26A98456FB88E14F FOREIGN KEY (utilisateur_id) REFERENCES [user] (id)
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE achat ADD CONSTRAINT FK_26A984561F1F2A24 FOREIGN KEY (element_id) REFERENCES element (id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE note ADD CONSTRAINT FK_CFBDFA14FB88E14F FOREIGN KEY (utilisateur_id) REFERENCES [user] (id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE pulse_point ADD CONSTRAINT FK_489C9459FB88E14F FOREIGN KEY (utilisateur_id) REFERENCES [user] (id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE recompense ADD CONSTRAINT FK_1E9BC0DEFB88E14F FOREIGN KEY (utilisateur_id) REFERENCES [user] (id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE tache ADD CONSTRAINT FK_93872075A76ED395 FOREIGN KEY (user_id) REFERENCES [user] (id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE reglages DROP CONSTRAINT FK_46E7DCF5661AA
-        SQL);
-        $this->addSql(<<<'SQL'
-            DROP TABLE reglages
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE pomodoro_session ALTER COLUMN started_at DATETIME2(6) NOT NULL
@@ -91,6 +43,12 @@ final class Version20250410043456 extends AbstractMigration
         SQL);
         $this->addSql(<<<'SQL'
             EXEC sp_addextendedproperty N'MS_Description', N'(DC2Type:datetime_immutable)', N'SCHEMA', 'dbo', N'TABLE', 'pomodoro_session', N'COLUMN', 'ended_at'
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE pulse_point ADD CONSTRAINT FK_489C9459FB88E14F FOREIGN KEY (utilisateur_id) REFERENCES [user] (id)
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE recompense ADD CONSTRAINT FK_1E9BC0DEFB88E14F FOREIGN KEY (utilisateur_id) REFERENCES [user] (id)
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE [user] ADD avatar_principal_id INT
@@ -170,46 +128,13 @@ final class Version20250410043456 extends AbstractMigration
             CREATE SCHEMA dbo
         SQL);
         $this->addSql(<<<'SQL'
-            CREATE TABLE reglages (id INT IDENTITY NOT NULL, user_id_p_id INT, pomodoro_p INT, courte_pause_p INT, longue_pause_p INT, theme_p NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS, PRIMARY KEY (id))
+            CREATE TABLE reglages (id INT IDENTITY NOT NULL, user_nb_id INT, pomodoro INT, courte_pause INT, longue_pause INT, theme NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS, PRIMARY KEY (id))
         SQL);
         $this->addSql(<<<'SQL'
-            CREATE UNIQUE NONCLUSTERED INDEX UNIQ_46E7DCF5661AA ON reglages (user_id_p_id) WHERE user_id_p_id IS NOT NULL
+            CREATE UNIQUE NONCLUSTERED INDEX UNIQ_46E7DCFACDE6C3 ON reglages (user_nb_id) WHERE user_nb_id IS NOT NULL
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE reglages ADD CONSTRAINT FK_46E7DCF5661AA FOREIGN KEY (user_id_p_id) REFERENCES [user] (id) ON UPDATE NO ACTION ON DELETE NO ACTION
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE achat DROP CONSTRAINT FK_26A98456FB88E14F
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE achat DROP CONSTRAINT FK_26A984561F1F2A24
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE note DROP CONSTRAINT FK_CFBDFA14FB88E14F
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE pulse_point DROP CONSTRAINT FK_489C9459FB88E14F
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE recompense DROP CONSTRAINT FK_1E9BC0DEFB88E14F
-        SQL);
-        $this->addSql(<<<'SQL'
-            ALTER TABLE tache DROP CONSTRAINT FK_93872075A76ED395
-        SQL);
-        $this->addSql(<<<'SQL'
-            DROP TABLE achat
-        SQL);
-        $this->addSql(<<<'SQL'
-            DROP TABLE note
-        SQL);
-        $this->addSql(<<<'SQL'
-            DROP TABLE pulse_point
-        SQL);
-        $this->addSql(<<<'SQL'
-            DROP TABLE recompense
-        SQL);
-        $this->addSql(<<<'SQL'
-            DROP TABLE tache
+            ALTER TABLE reglages ADD CONSTRAINT FK_46E7DCFACDE6C3 FOREIGN KEY (user_nb_id) REFERENCES [user] (id) ON UPDATE NO ACTION ON DELETE NO ACTION
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE pomodoro_session ALTER COLUMN started_at DATETIME2(6) NOT NULL
@@ -222,6 +147,18 @@ final class Version20250410043456 extends AbstractMigration
         SQL);
         $this->addSql(<<<'SQL'
             EXEC sp_dropextendedproperty N'MS_Description', N'SCHEMA', 'dbo', N'TABLE', 'pomodoro_session', N'COLUMN', 'ended_at'
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE achat DROP CONSTRAINT FK_26A98456FB88E14F
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE achat DROP CONSTRAINT FK_26A984561F1F2A24
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE pulse_point DROP CONSTRAINT FK_489C9459FB88E14F
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE recompense DROP CONSTRAINT FK_1E9BC0DEFB88E14F
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE [user] DROP CONSTRAINT FK_8D93D649BCC52533
