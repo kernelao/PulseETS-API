@@ -50,6 +50,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: PomodoroSession::class, mappedBy: 'user')]
     private Collection $pomodoroSessions;
 
+    #[ORM\OneToOne(mappedBy: 'userNb', targetEntity: Reglages::class, cascade: ['persist', 'remove'])]
+    private ?Reglages $reglage = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();

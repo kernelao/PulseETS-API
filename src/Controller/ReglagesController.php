@@ -12,6 +12,40 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/api/reglages')]
 final class ReglagesController extends AbstractController
 {
+
+    #[Route('/me', name: 'get_or_create_my_reglage', methods: ['GET'])]
+    public function getOrCreateMyReglage(EntityManagerInterface $em): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Non authentifié'], 401);
+        }
+
+        $reglage = $em->getRepository(Reglages::class)->findOneBy(['userNb' => $user]);
+
+        if (!$reglage) {
+            $reglage = new Reglages();
+            $reglage->setUserNb($user);
+            $reglage->setPomodoro(25);
+            $reglage->setCourtePause(5);
+            $reglage->setLonguePause(15);
+            $reglage->setTheme('Mode zen');
+
+            $em->persist($reglage);
+            $em->flush();
+        }
+
+        return $this->json([
+            'id' => $reglage->getId(),
+            'pomodoro' => $reglage->getPomodoro(),
+            'courte_pause' => $reglage->getCourtePause(),
+            'longue_pause' => $reglage->getLonguePause(),
+            'theme' => $reglage->getTheme(),
+        ]);
+    }
+
+    
     #[Route('/{id}', name: 'get_reglage', methods: ['GET'])]
     public function getReglage(int $id, EntityManagerInterface $em): JsonResponse
     {
@@ -24,8 +58,8 @@ final class ReglagesController extends AbstractController
         return $this->json([
             'id' => $reglage->getId(),
             'pomodoro' => $reglage->getPomodoro(),
-            'short_break' => $reglage->getShortBreak(),
-            'long_break' => $reglage->getLongBreak(),
+            'courte_pause' => $reglage->getCourtePause(),
+            'longue_pause' => $reglage->getLonguePause(),
             'theme' => $reglage->getTheme(),
         ]);
     }
@@ -42,8 +76,8 @@ final class ReglagesController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         $reglage->setPomodoro($data['pomodoro'] ?? $reglage->getPomodoro());
-        $reglage->setShortBreak($data['short_break'] ?? $reglage->getShortBreak());
-        $reglage->setLongBreak($data['long_break'] ?? $reglage->getLongBreak());
+        $reglage->setCourtePause($data['courte_pause'] ?? $reglage->getCourtePause());
+        $reglage->setLonguePause($data['longue_pause'] ?? $reglage->getLonguePause());
         $reglage->setTheme($data['theme'] ?? $reglage->getTheme());
 
         $em->flush();
@@ -51,8 +85,8 @@ final class ReglagesController extends AbstractController
         return $this->json([
             'id' => $reglage->getId(),
             'pomodoro' => $reglage->getPomodoro(),
-            'short_break' => $reglage->getShortBreak(),
-            'long_break' => $reglage->getLongBreak(),
+            'courte_pause' => $reglage->getCourtePause(),
+            'longue_pause' => $reglage->getLonguePause(),
             'theme' => $reglage->getTheme(),
         ]);
     }
