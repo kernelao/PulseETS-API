@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Element;
 use App\Entity\User;
+use App\Entity\Achat; 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
@@ -12,6 +13,8 @@ use Doctrine\ORM\EntityManagerInterface;
 #[Route('/api/boutique')]
 class BoutiqueController extends AbstractController
 {
+    public function __construct(private EntityManagerInterface $entityManager) {}
+
     #[Route('/avatars', name: 'get_boutique_avatars', methods: ['GET'])]
     public function getAvatars(EntityManagerInterface $em): JsonResponse
     {
@@ -81,18 +84,26 @@ public function getThemes(EntityManagerInterface $em): JsonResponse
 
         $pulsePoints = $user->getTotalPulsePoints();
 
-        $unlockedAvatars = $user->getAchats()->filter(
-            fn($achat) => $achat->getElement()->getType() === 'avatar'
-        )->map(fn($achat) => $achat->getElement()->getName())->toArray();
+        $achats = $this->entityManager->getRepository(Achat::class)->findBy(['utilisateur' => $user]);
 
-        $unlockedThemes = $user->getAchats()->filter(
-            fn($achat) => $achat->getElement()->getType() === 'theme'
-        )->map(fn($achat) => $achat->getElement()->getName())->toArray();
+$unlockedAvatars = [];
+$unlockedThemes = [];
 
-        return new JsonResponse([
-            'pulsePoints' => $pulsePoints,
-            'unlockedAvatars' => $unlockedAvatars,
-            'unlockedThemes' => $unlockedThemes,
-        ]);
+foreach ($achats as $achat) {
+    $element = $achat->getElement();
+    if ($element->getType() === 'avatar') {
+        $unlockedAvatars[] = $element->getName();
+    } elseif ($element->getType() === 'theme') {
+        $unlockedThemes[] = $element->getName();
+    }
+}
+
+
+return new JsonResponse([
+    'pulsePoints' => $user->getTotalPulsePoints(),
+    'unlockedAvatars' => array_values($unlockedAvatars), // 👈 bien un tableau
+    'unlockedThemes' => array_values($unlockedThemes),   // 👈 bien un tableau
+]);
+
     }
 }

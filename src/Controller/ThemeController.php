@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Entity\Theme;
+use App\Entity\Element;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -28,7 +28,7 @@ final class ThemeController extends AbstractController
         }
 
         // Récupérer le thème en fonction de l'ID
-        $theme = $this->entityManager->getRepository(Theme::class)->find($id);
+        $theme = $this->entityManager->getRepository(Element::class)->find($id);
         if (!$theme) {
             return new JsonResponse(['message' => 'Theme not found'], 404);
         }

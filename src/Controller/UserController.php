@@ -171,6 +171,10 @@ class UserController extends AbstractController
                 return new JsonResponse(['message' => 'Avatar principal mis à jour avec succès']);
             }
         }
+
+        $data = json_decode($request->getContent(), true);
+dd($data);
+
     
         return new JsonResponse(['message' => 'Avatar non trouvé ou non débloqué'], 404);
     }
