@@ -61,6 +61,7 @@ class ProfileController extends AbstractController
             'points' => $points,
             'unlockedAvatars' => $unlockedAvatars,
             'unlockedThemes' => $unlockedThemes,
+            'pulsePoints' => $user->getTotalPulsePoints(),
         ]);
     }
 
