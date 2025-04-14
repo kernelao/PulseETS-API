@@ -54,6 +54,11 @@ class Tache
     #[ORM\JoinColumn(nullable: true)]
     private ?User $user = null;
 
+    //ajoute
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups('tache:read')]
+    private ?\DateTimeInterface $completedAt = null;
+
     public function __construct()
     {
         $now = new \DateTime();
@@ -94,4 +99,16 @@ class Tache
 
     public function getUser(): ?User { return $this->user; }
     public function setUser(?User $user): static { $this->user = $user; return $this; }
+
+    //ajoute 
+    public function getCompletedAt(): ?\DateTimeInterface
+{
+    return $this->completedAt;
+}
+
+public function setCompletedAt(?\DateTimeInterface $completedAt): static
+{
+    $this->completedAt = $completedAt;
+    return $this;
+}
 }

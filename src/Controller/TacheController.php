@@ -40,7 +40,7 @@ class TacheController extends AbstractController
     
         if (!empty($data['dueDate'])) {
             // Assurer que la dueDate est bien en format 'Y-m-d'
-            $dueDate = \DateTime::createFromFormat('Y-m-d', $data['dueDate']);
+            $dueDate = \DateTime::createFromFormat('Y-m-d', $data['dueDate'],new \DateTimeZone('America/Toronto'));
             if ($dueDate === false) {
                 return $this->json(['error' => 'Date invalide.'], 400);
             }
@@ -103,6 +103,14 @@ public function update(Request $request, Tache $tache, EntityManagerInterface $e
 
     if (isset($data['completed'])) {
         $tache->setCompleted($data['completed']);
+
+        if ($data['completed']) {
+            // If just marked as completed, set completedAt
+            $tache->setCompletedAt(new \DateTime('now', new \DateTimeZone('America/Toronto')));
+        } else {
+            // If uncompleted, optionally reset the timestamp
+            $tache->setCompletedAt(null);
+        }
     }
 
     if (isset($data['pinned'])) {
@@ -110,7 +118,7 @@ public function update(Request $request, Tache $tache, EntityManagerInterface $e
     }
 
     if (array_key_exists('dueDate', $data)) {
-        $dueDate = \DateTime::createFromFormat('Y-m-d', $data['dueDate']);
+        $dueDate = \DateTime::createFromFormat('Y-m-d', $data['dueDate'],new \DateTimeZone('America/Toronto'));
         if (!$dueDate) {
             return $this->json(['error' => 'Date invalide. Format attendu : Y-m-d'], 400);
         }
