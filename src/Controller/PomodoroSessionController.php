@@ -27,13 +27,15 @@ class PomodoroSessionController extends AbstractController
         }
 
         try {
+            $timezone = new \DateTimeZone('America/Toronto');
+
             $session = new PomodoroSession();
             $session->setUser($user); // 👤 Associer l'utilisateur
 
             // 🕒 Début & Fin
-            $session->setStartedAt(new \DateTimeImmutable($data['startedAt']));
+            $session->setStartedAt(new \DateTimeImmutable($data['startedAt'], $timezone));
             if (!empty($data['endedAt'])) {
-                $session->setEndedAt(new \DateTimeImmutable($data['endedAt']));
+                $session->setEndedAt(new \DateTimeImmutable($data['endedAt'], $timezone));
             }
 
             // 🔢 Pomodoros complétés
