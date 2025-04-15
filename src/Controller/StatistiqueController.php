@@ -55,7 +55,10 @@ class StatistiqueController extends AbstractController
             'tachesWeek' => $tachesWeek,
             'pomodorosWeek' => $pomodorosWeek,
             'tachesToday' => $tachesToday,
-            'pomodorosToday' => $pomodorosToday
+            'pomodorosToday' => $pomodorosToday,
+            'user' => [
+                'username' => $user->getUsername(), 
+            ],
         ]);
     }
 }
