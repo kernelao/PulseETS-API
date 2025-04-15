@@ -40,4 +40,21 @@ class TacheRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    //pour Statistique
+    public function countCompletedBetween($user, \DateTime $start, \DateTime $end): int
+    {
+        return $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.user = :user')
+            ->andWhere('t.completed = true')
+            ->andWhere('t.completedAt BETWEEN :start AND :end')
+            ->setParameter('user', $user)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+    
+
 }
