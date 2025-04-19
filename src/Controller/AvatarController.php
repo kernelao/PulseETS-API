@@ -92,4 +92,27 @@ class AvatarController extends AbstractController
         return new JsonResponse(['message' => 'Avatar removed successfully'], 200);
     }
 
+    #[Route('/api/user/avatar', name: 'apply_avatar', methods: ['PUT'])]
+public function applyAvatar(Request $request, UserInterface $user): JsonResponse
+{
+    $data = json_decode($request->getContent(), true);
+    $avatarName = $data['avatarName'] ?? null;
+
+    if (!$avatarName) {
+        return new JsonResponse(['message' => 'Nom d\'avatar manquant.'], 400);
+    }
+
+    // Vérifie que l'utilisateur a bien cet avatar dans sa collection (sécurité)
+    $unlockedNames = array_map(fn($a) => $a->getName(), $user->getAvatars()->toArray());
+
+    if (!in_array($avatarName, $unlockedNames)) {
+        return new JsonResponse(['message' => 'Cet avatar n\'est pas débloqué par l\'utilisateur.'], 403);
+    }
+
+    $user->setAvatarPrincipal($avatarName);
+    $this->entityManager->flush();
+
+    return new JsonResponse(['message' => 'Avatar appliqué avec succès.']);
+}
+
 }
