@@ -62,6 +62,7 @@ class ProfileController extends AbstractController
             'unlockedAvatars' => $unlockedAvatars,
             'unlockedThemes' => $unlockedThemes,
             'pulsePoints' => $user->getTotalPulsePoints(),
+            'avatarPrincipal' => $user->getAvatarPrincipal()?->getName(),
         ]);
     }
 
