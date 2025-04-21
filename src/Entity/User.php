@@ -316,4 +316,21 @@ public function getAchats(): Collection
     // {
     //     return $this->getEmail(); // Ça va forcer Lexik à mettre l'email comme "username" dans le token
     // }
+
+    public function getReglage(): ?Reglages
+{
+    return $this->reglage;
+}
+
+public function setReglage(?Reglages $reglage): self
+{
+    $this->reglage = $reglage;
+
+    if ($reglage !== null && $reglage->getUserNb() !== $this) {
+        $reglage->setUserNb($this);
+    }
+
+    return $this;
+}
+
 }
