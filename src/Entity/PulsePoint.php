@@ -22,6 +22,12 @@ class PulsePoint
 
     #[ORM\Column]
     private ?\DateTimeImmutable $dateCreated = null;
+    
+    public function __construct()
+    {
+        $this->dateCreated = new \DateTimeImmutable();
+    }
+
 
     public function getId(): ?int
     {

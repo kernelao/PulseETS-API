@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Service\RecompenseService;
 
 #[Route('/api/notes', name: 'api_notes_')]
 class NoteController extends AbstractController
@@ -25,7 +26,7 @@ class NoteController extends AbstractController
     }
 
     #[Route('', name: 'create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
+    public function create(Request $request, EntityManagerInterface $em, ValidatorInterface $validator, NoteRepository $noteRepository, RecompenseService $recompenseService): JsonResponse
     {
         $user = $this->getUser();
     
@@ -52,6 +53,15 @@ class NoteController extends AbstractController
     
         $em->persist($note);
         $em->flush();
+
+        // Comptage des notes actuelles de l'utilisateur
+        $nbNotes = $noteRepository->count(['utilisateur' => $user]);
+
+        // Déclenche la vérification des récompenses
+        $recompenseService->verifierEtDebloquerRecompenses($user, [
+            'notesAjoutees' => $nbNotes
+        ]);
+
     
         return $this->json($note, 201, [], ['groups' => 'note:read']);
     }

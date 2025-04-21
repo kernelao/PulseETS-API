@@ -38,6 +38,7 @@ class BoutiqueController extends AbstractController
             'id' => $avatar->getId(),
             'name' => $avatar->getName(),
             'owned' => in_array($avatar->getName(), $ownedAvatars),
+            'active' => true,
         ], $avatars);
     
         return new JsonResponse($data);
@@ -67,6 +68,7 @@ public function getThemes(EntityManagerInterface $em): JsonResponse
         'id' => $theme->getId(),
         'name' => $theme->getName(),
         'owned' => in_array($theme->getName(), $ownedThemes),
+        'active' => true,
     ], $themes);
 
     return new JsonResponse($data);
@@ -91,6 +93,7 @@ $unlockedThemes = [];
 
 foreach ($achats as $achat) {
     $element = $achat->getElement();
+    dump($element->getType(), $element->getName());
     if ($element->getType() === 'avatar') {
         $unlockedAvatars[] = $element->getName();
     } elseif ($element->getType() === 'theme') {
@@ -98,6 +101,9 @@ foreach ($achats as $achat) {
     }
 }
 
+if (!in_array('defautavatar', $unlockedAvatars)) {
+    $unlockedAvatars[] = 'defautavatar';
+}
 
 return new JsonResponse([
     'pulsePoints' => $user->getTotalPulsePoints(),

@@ -1,9 +1,11 @@
 <?php
 
+// src/Service/RecompenseService.php
 namespace App\Service;
 
 use App\Entity\Recompense;
 use App\Entity\User;
+use App\Entity\PulsePoint;
 use Doctrine\ORM\EntityManagerInterface;
 
 class RecompenseService
@@ -16,10 +18,11 @@ class RecompenseService
     }
 
     /**
-     * Vérifie et débloque les récompenses pour un utilisateur.
+     * Vérifie et débloque les récompenses pour un utilisateur, tout en ajoutant des PulsePoints.
+     * Désormais, les PulsePoints sont ajoutés à chaque seuil atteint, même si la récompense est déjà débloquée.
      *
      * @param User $user
-     * @param array $progres Ex : ['notesAjoutees' => 5, 'tachesCompletees' => 10, 'sessionsCompletees' => 3]
+     * @param array $progres
      * @return array Liste des récompenses débloquées
      */
     public function verifierEtDebloquerRecompenses(User $user, array $progres): array
@@ -32,6 +35,18 @@ class RecompenseService
             ['type' => 'tachesCompletees', 'valeurs' => [1, 5, 20, 50, 100]],
         ];
 
+        // barème des points pour chaque seuil
+        $pointsParSeuil = [
+            1 => 10,
+            5 => 50,
+            15 => 150,
+            20 => 200,
+            25 => 250,
+            30 => 300,
+            50 => 500,
+            100 => 1000,
+        ];
+
         $nouvelles = [];
 
         foreach ($badges as $badge) {
@@ -41,6 +56,18 @@ class RecompenseService
 
             foreach ($seuils as $seuil) {
                 $cle = $type . '-' . $seuil;
+
+                // Toujours ajouter des points si seuil atteint
+                if ($progression >= $seuil) {
+                    $points = $pointsParSeuil[$seuil] ?? 5;
+                    $pulse = new PulsePoint();
+                    $pulse->setUtilisateur($user);
+                    $pulse->setPoints($points);
+                    $pulse->setDateCreated(new \DateTimeImmutable());
+                    $this->em->persist($pulse);
+                }
+
+                // Débloquer la récompense seulement si pas encore obtenue
                 if ($progression >= $seuil && !in_array($cle, $dejaDebloquees)) {
                     $recompense = new Recompense();
                     $recompense->setUtilisateur($user);
@@ -51,17 +78,58 @@ class RecompenseService
                     $recompense->setDescription('Récompense pour avoir atteint ' . $seuil . ' dans ' . $type);
                     $recompense->setAvatarOffert('');
                     $recompense->setDateDebloquee(new \DateTime());
-            
+
                     $this->em->persist($recompense);
                     $nouvelles[] = $recompense;
                 }
             }            
         }
+        
+        $types = ['notesAjoutees', 'tachesCompletees', 'sessionsCompletees'];
+$tousSeuils = [
+    'notesAjoutees' => [1, 5, 15, 30, 100],
+    'tachesCompletees' => [1, 5, 20, 50, 100],
+    'sessionsCompletees' => [1, 5, 10, 25, 50, 100]
+];
 
-        if (count($nouvelles) > 0) {
-            $this->em->flush();
+$dejaDebloquees = $user->getRecompenses()->map(fn($r) => $r->getType() . '-' . $r->getValeur())->toArray();
+
+$manquantes = false;
+foreach ($types as $type) {
+    foreach ($tousSeuils[$type] as $seuil) {
+        if (!in_array("$type-$seuil", $dejaDebloquees)) {
+            $manquantes = true;
+            break 2;
         }
+    }
+}
 
+// Vérifie s'il a déjà reçu le bonus pour tout avoir complété
+$bonusDejaDonne = $user->getRecompenses()->exists(fn($k, $r) =>
+    $r->getType() === 'bonusComplet'
+);
+
+if (!$manquantes && !$bonusDejaDonne) {
+    $bonus = new \App\Entity\Recompense();
+    $bonus->setUtilisateur($user);
+    $bonus->setType('bonusComplet');
+    $bonus->setNom('Toutes les récompenses complétées');
+    $bonus->setValeur(1000);
+    $bonus->setSeuil(0);
+    $bonus->setDescription('Félicitations, vous avez débloqué toutes les récompenses possibles !');
+    $bonus->setDateDebloquee(new \DateTime());
+    $bonus->setAvatarOffert(null);
+    $this->em->persist($bonus);
+
+    $points = new \App\Entity\PulsePoint();
+    $points->setUtilisateur($user);
+    $points->setPoints(1000);
+    $points->setDateCreated(new \DateTimeImmutable());
+    $this->em->persist($points);
+
+    $nouvelles[] = $bonus;
+}
+        $this->em->flush();
         return $nouvelles;
     }
 }

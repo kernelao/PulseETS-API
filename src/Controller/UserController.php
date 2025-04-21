@@ -63,7 +63,12 @@ class UserController extends AbstractController
             'themeName' => $user->getThemeName(),
             'avatarPrincipal' => $user->getAvatarPrincipal()?->getName(),
             'themeName' => $user->getThemeName(),
-
+            'recompenses' => $user->getRecompenses()->map(function ($r) {
+                return [
+                    'type' => $r->getType(),
+                    'valeur' => $r->getValeur()
+                ];
+            })->toArray()
         ]);
     }
 
