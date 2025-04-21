@@ -5,6 +5,10 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Entity\Achat;
 use App\Entity\Element;
+use App\Entity\Reglages;
+use App\Entity\DefaultReglage;
+use App\Repository\DefaultReglageRepository;
+
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,8 +33,25 @@ class AuthController extends AbstractController
         );
         $user->setRoles(['ROLE_USER']);
 
+
+        $defaultReglage = $em->getRepository(DefaultReglage::class)->findOneBy([], ['id' => 'DESC']);
+
         $em->persist($user);
-        $em->flush();
+
+
+    if ($defaultReglage) {
+    $reglage = new Reglages();
+    $reglage->setPomodoro($defaultReglage->getPomodoro());
+    $reglage->setCourtePause($defaultReglage->getCourtePause());
+    $reglage->setLonguePause($defaultReglage->getLonguePause());
+    $reglage->setTheme($defaultReglage->getTheme());
+    $reglage->setUserNb($user); // Très important ici
+    $user->setReglage($reglage);
+
+
+    $em->persist($reglage);
+    }
+    $em->flush(); // Flush final (pour le réglage + éventuel achat)
 
         $avatar = $em->getRepository(Element::class)->findOneBy([
             'name' => 'defautavatar',

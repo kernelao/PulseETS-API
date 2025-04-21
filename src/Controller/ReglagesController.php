@@ -25,16 +25,20 @@ final class ReglagesController extends AbstractController
         $reglage = $em->getRepository(Reglages::class)->findOneBy(['userNb' => $user]);
 
         if (!$reglage) {
+            // Aller chercher le default réglage défini par l'admin
+            $default = $em->getRepository(\App\Entity\DefaultReglage::class)->findOneBy([], ['id' => 'DESC']);
+        
             $reglage = new Reglages();
             $reglage->setUserNb($user);
-            $reglage->setPomodoro(25);
-            $reglage->setCourtePause(5);
-            $reglage->setLonguePause(15);
-            $reglage->setTheme('Mode zen');
-
+            $reglage->setPomodoro($default?->getPomodoro() ?? 25);
+            $reglage->setCourtePause($default?->getCourtePause() ?? 5);
+            $reglage->setLonguePause($default?->getLonguePause() ?? 15);
+            $reglage->setTheme($default?->getTheme() ?? 'Mode zen');
+        
             $em->persist($reglage);
             $em->flush();
         }
+        
 
         return $this->json([
             'id' => $reglage->getId(),
