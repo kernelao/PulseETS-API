@@ -9,6 +9,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
+
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
@@ -19,6 +21,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
+    #[Groups(['aide:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]
@@ -31,6 +34,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private string $password;
 
     #[ORM\Column(type: 'string', length: 50, unique: true)]
+    #[Groups(['aide:read'])]
     private ?string $username = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
@@ -312,4 +316,21 @@ public function getAchats(): Collection
     // {
     //     return $this->getEmail(); // Ça va forcer Lexik à mettre l'email comme "username" dans le token
     // }
+
+    public function getReglage(): ?Reglages
+{
+    return $this->reglage;
+}
+
+public function setReglage(?Reglages $reglage): self
+{
+    $this->reglage = $reglage;
+
+    if ($reglage !== null && $reglage->getUserNb() !== $this) {
+        $reglage->setUserNb($this);
+    }
+
+    return $this;
+}
+
 }
