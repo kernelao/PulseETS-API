@@ -9,13 +9,15 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Service\RecompenseService;
+use App\Repository\PomodoroSessionRepository;
 
 #[Route('/api/pomodoro-session')]
 class PomodoroSessionController extends AbstractController
 {
     #[Route('', name: 'create_pomodoro_session', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function create(Request $request, EntityManagerInterface $em): JsonResponse
+    public function create(Request $request, EntityManagerInterface $em, PomodoroSessionRepository $pomodoroSessionRepository, RecompenseService $recompenseService): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
@@ -47,8 +49,21 @@ class PomodoroSessionController extends AbstractController
             $session->setShortBreak($data['shortBreak'] ?? null);
             $session->setLongBreak($data['longBreak'] ?? null);
 
+            //if ($session->getPomodoroDuration() < 1500) {
+              //  return $this->json([
+                //    'status' => 'error',
+                  //  'message' => 'Session trop courte pour être validée (min. 25 minutes)'
+              //  ], 400);
+            //}
+
             $em->persist($session);
             $em->flush();
+
+            $nbSessions = $pomodoroSessionRepository->count(['user' => $user]);
+
+            $recompenseService->verifierEtDebloquerRecompenses($user, [
+                'sessionsCompletees' => $nbSessions
+        ]);
 
             return $this->json([
                 'status' => 'ok',

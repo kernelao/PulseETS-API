@@ -90,6 +90,6 @@ class AvatarController extends AbstractController
         $this->entityManager->flush();
 
         return new JsonResponse(['message' => 'Avatar removed successfully'], 200);
-    }
+    }  
 
 }

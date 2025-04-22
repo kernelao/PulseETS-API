@@ -63,8 +63,12 @@ class AuthController extends AbstractController
             $achat->setUtilisateur($user);
             $achat->setElement($avatar);
             $achat->setDateAchat(new \DateTimeImmutable());
+            $achat->setIsActive(true);
+            
+            $user->setAvatarPrincipal($avatar);
 
             $em->persist($achat);
+            $em->persist($user);
             $em->flush();
         }
 

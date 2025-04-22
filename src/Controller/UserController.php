@@ -63,7 +63,12 @@ class UserController extends AbstractController
             'themeName' => $user->getThemeName(),
             'avatarPrincipal' => $user->getAvatarPrincipal()?->getName(),
             'themeName' => $user->getThemeName(),
-
+            'recompenses' => $user->getRecompenses()->map(function ($r) {
+                return [
+                    'type' => $r->getType(),
+                    'valeur' => $r->getValeur()
+                ];
+            })->toArray()
         ]);
     }
 
@@ -94,91 +99,73 @@ class UserController extends AbstractController
         return new JsonResponse(['message' => 'Points ajoutés avec succès'], 201);
     }
 
-    #[Route('/theme/apply/{themeName}', name: 'apply_theme', methods: ['POST'])]
-    public function applyTheme(string $themeName, AchatRepository $achatRepo): JsonResponse
-    {
-        $user = $this->getUser();
+    #[Route('/theme/apply', name: 'apply_theme', methods: ['POST'])]
+public function applyTheme(Request $request, AchatRepository $achatRepo): JsonResponse
+{
+    $user = $this->getUser();
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['message' => 'Non authentifié'], 401);
-        }
-
-        $achats = $achatRepo->findBy(['utilisateur' => $user]);
-        $ownedThemeNames = array_map(function ($achat) {
-            return $achat->getElement()?->getName();
-        }, array_filter($achats, fn($achat) => $achat->getElement()?->getType() === 'theme'));
-
-        if (!in_array($themeName, $ownedThemeNames)) {
-            return new JsonResponse(['message' => 'Thème non débloqué'], 403);
-        }
-
-        $user->setThemeName($themeName);
-        $this->em->persist($user);
-        $this->em->flush();
-
-        return new JsonResponse(['message' => 'Thème appliqué avec succès']);
+    if (!$user instanceof User) {
+        return new JsonResponse(['message' => 'Non authentifié'], 401);
     }
 
-    #[Route('/avatar/apply/{id}', name: 'apply_avatar', methods: ['POST'])]
-    public function applyAvatar(Element $element, AchatRepository $achatRepo): JsonResponse
-    {
-        $user = $this->getUser();
+    $data = json_decode($request->getContent(), true);
+    $themeName = $data['themeName'] ?? null;
 
-        if (!$user instanceof User) {
-            return new JsonResponse(['message' => 'Non authentifié'], 401);
-        }
-
-    // Vérifie que c’est un avatar
-        if ($element->getType() !== 'avatar') {
-            return new JsonResponse(['message' => 'Ce n’est pas un avatar valide'], 400);
-        }
-
-    // Vérifie que l'utilisateur le possède
-        $achat = $achatRepo->findOneBy(['utilisateur' => $user, 'element' => $element]);
-        if (!$achat) {
-            return new JsonResponse(['message' => 'Avatar non débloqué'], 403);
-        }
-
-        $user->setAvatarPrincipal($element);
-        $this->em->flush();
-
-        return new JsonResponse(['message' => 'Avatar principal mis à jour']);
+    if (!$themeName) {
+        return new JsonResponse(['message' => 'Nom du thème manquant'], 400);
     }
 
-    #[Route('/avatar/principal', name: 'change_avatar_principal', methods: ['POST'])]
-    public function changeAvatarPrincipal(
-        Request $request,
-        AchatRepository $achatRepository,
-        EntityManagerInterface $em
-        ): JsonResponse {
-        $user = $this->getUser();
-    
-        if (!$user instanceof User) {
-            return new JsonResponse(['message' => 'Non authentifié'], 401);
-        }
-    
-        $data = json_decode($request->getContent(), true);
-        $avatarName = $data['avatarName'] ?? null;
-    
-        if (!$avatarName) {
-            return new JsonResponse(['message' => 'Nom de l\'avatar manquant'], 400);
-        }
-    
-        $achats = $achatRepository->findBy(['utilisateur' => $user]);
-    
-        foreach ($achats as $achat) {
-            $element = $achat->getElement();
-            if ($element->getType() === 'avatar' && $element->getName() === $avatarName) {
-                $user->setAvatarPrincipal($achat->getElement());
-                $em->flush();
-    
-                return new JsonResponse(['message' => 'Avatar principal mis à jour avec succès']);
-            }
-        }
+    $achats = $achatRepo->findBy(['utilisateur' => $user]);
 
-    
-        return new JsonResponse(['message' => 'Avatar non trouvé ou non débloqué'], 404);
+    $ownedThemeNames = array_map(function ($achat) {
+        return $achat->getElement()?->getName();
+    }, array_filter($achats, fn($achat) => $achat->getElement()?->getType() === 'theme'));
+
+    if (!in_array($themeName, $ownedThemeNames)) {
+        return new JsonResponse(['message' => 'Thème non débloqué'], 403);
     }
+
+    $user->setThemeName($themeName);
+    $this->em->flush();
+
+    return new JsonResponse(['message' => 'Thème appliqué avec succès']);
+}
+
+
+    #[Route('/avatar/principal', name: 'change_avatar_principal', methods: ['PUT'])]
+public function changeAvatarPrincipal(
+    Request $request,
+    AchatRepository $achatRepository,
+    EntityManagerInterface $em
+): JsonResponse {
+    $user = $this->getUser();
+
+    if (!$user instanceof User) {
+        return new JsonResponse(['message' => 'Non authentifié'], 401);
+    }
+
+    $data = json_decode($request->getContent(), true);
+    $avatarName = $data['avatarName'] ?? null;
+
+    if (!$avatarName) {
+        return new JsonResponse(['message' => 'Nom de l\'avatar manquant'], 400);
+    }
+
+    $achats = $achatRepository->findBy(['utilisateur' => $user]);
+
+    foreach ($achats as $achat) {
+        $element = $achat->getElement();
+        if ($element->getType() === 'avatar' && $element->getName() === $avatarName) {
+            $user->setAvatarPrincipal($element);
+            $em->flush();
+
+            return new JsonResponse(['message' => 'Avatar principal mis à jour avec succès']);
+        }
+    }
+
+    return new JsonResponse(['message' => 'Avatar non trouvé ou non débloqué'], 404);
+}
+
 
     #[Route('/recompenses/check', name: 'check_recompenses', methods: ['POST'])]
     public function checkRecompenses(Request $request, RecompenseService $recompenseService): JsonResponse
