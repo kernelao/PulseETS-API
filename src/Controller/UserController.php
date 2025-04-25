@@ -60,8 +60,8 @@ class UserController extends AbstractController
             'pulsePoints' => $pulsePoints,
             'unlockedAvatars' => $avatars,
             'unlockedThemes' => $themes,
-            'themeName' => $user->getThemeName(),
-            'avatarPrincipal' => $user->getAvatarPrincipal()?->getName(),
+            'themeName' => $user->getThemeName() ?? 'mode-jour',
+            'avatarPrincipal' => $user->getAvatarPrincipal()?->getName() ?? 'Jon Doe',
             'themeName' => $user->getThemeName(),
             'recompenses' => $user->getRecompenses()->map(function ($r) {
                 return [

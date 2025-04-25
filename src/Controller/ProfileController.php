@@ -75,7 +75,7 @@ public function getProfile(RecompenseRepository $recompenseRepository): JsonResp
         'pulsePoints' => $points,
         'unlockedAvatars' => $unlockedAvatars,
         'unlockedThemes' => $unlockedThemes,
-        'avatarPrincipal' => $user->getAvatarPrincipal()?->getName(),
+        'avatarPrincipal' => $user->getAvatarPrincipal()?->getName() ?? 'Jon Doe',
         'recompenses' => $recompensesData
     ]);
 }
